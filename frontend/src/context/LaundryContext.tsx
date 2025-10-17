@@ -33,7 +33,9 @@ type LaundryContextValue = {
   removeShipment: (shipmentId: string) => Promise<void>;
 };
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ?? '';
+const API_BASE_URL =
+  (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, '') ??
+  'https://lavanderiazanotto-production.up.railway.app';
 
 const LaundryContext = createContext<LaundryContextValue | undefined>(undefined);
 

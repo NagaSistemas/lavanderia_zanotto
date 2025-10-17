@@ -73,7 +73,7 @@ export const ShipmentsSection = () => {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!hasProducts) {
-      setFormError('Cadastre pelo menos um produto antes de registrar envios.');
+      setFormError('Cadastre ao menos um produto antes de registrar envios.');
       return;
     }
 
@@ -141,279 +141,337 @@ export const ShipmentsSection = () => {
     }
   };
 
+  const totalShipments = shipmentDetails.length;
+  const totalSent = shipmentDetails.reduce((acc, shipment) => acc + shipment.totalSent, 0);
+  const totalMissing = shipmentDetails.reduce((acc, shipment) => acc + shipment.totalMissing, 0);
+  const totalCost = shipmentDetails.reduce((acc, shipment) => acc + shipment.totalCost, 0);
+
   return (
     <section aria-labelledby="shipments-section">
-      <div className="flex flex-col gap-6 rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-100">
-        <header className="flex flex-col gap-2">
-          <h2 id="shipments-section" className="text-lg font-semibold text-slate-900">
-            Controle de Envios
-          </h2>
-          <p className="text-sm text-slate-600">
-            Registre cada lote enviado para a lavanderia e acompanhe retornos, itens faltantes e custo.
-          </p>
-        </header>
-
-        <form className="grid gap-4" onSubmit={handleSubmit}>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="flex flex-col gap-1">
-              <label htmlFor="sent-at" className="text-sm font-medium text-slate-700">
-                Data de envio
-              </label>
-              <input
-                id="sent-at"
-                type="date"
-                value={sentAt}
-                onChange={(event) => setSentAt(event.target.value)}
-                className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
-                required
-              />
+      <div className="space-y-6">
+        <div className="rounded-3xl bg-white/90 p-6 shadow-sm ring-1 ring-slate-200 md:p-8">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <div className="max-w-2xl space-y-2">
+              <h2 id="shipments-section" className="text-xl font-semibold text-slate-900 md:text-2xl">
+                Controle de envios
+              </h2>
+              <p className="text-sm text-slate-600">
+                Registre os lotes enviados para a lavanderia, acompanhe retornos e mantenha o histórico organizado. As informações alimentam relatórios financeiros e alertas operacionais.
+              </p>
             </div>
-            <div className="flex flex-col gap-1">
-              <label htmlFor="expected-return" className="text-sm font-medium text-slate-700">
-                Previsao de retorno
-              </label>
-              <input
-                id="expected-return"
-                type="date"
-                value={expectedReturnAt}
-                onChange={(event) => setExpectedReturnAt(event.target.value)}
-                className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
-              />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label htmlFor="notes" className="text-sm font-medium text-slate-700">
-                Observacoes
-              </label>
-              <input
-                id="notes"
-                type="text"
-                value={notes}
-                onChange={(event) => setNotes(event.target.value)}
-                placeholder="Lote semanal, prioridade alta..."
-                className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
-              />
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <StatBadge label="Envios registrados" value={totalShipments.toString()} />
+              <StatBadge label="Pecas enviadas" value={totalSent.toLocaleString('pt-BR')} />
+              <StatBadge label="Pecas pendentes" value={totalMissing.toLocaleString('pt-BR')} muted={totalMissing === 0} />
+              <StatBadge label="Custo acumulado" value={formatCurrency(totalCost)} />
             </div>
           </div>
+        </div>
 
-          <div className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-slate-700">Itens do envio</span>
-            <div className="flex flex-col gap-3">
-              {lines.map((line, index) => (
-                <div
-                  key={line.id}
-                  className="rounded-lg border border-slate-200 bg-slate-50/60 p-3 shadow-sm md:flex md:items-center md:gap-3"
-                >
-                  <div className="flex flex-1 flex-col gap-1">
-                    <label className="text-xs font-medium text-slate-500">
-                      Produto {index + 1}
-                    </label>
-                    <select
-                      value={line.productId}
-                      onChange={(event) => handleLineChange(line.id, 'productId', event.target.value)}
-                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
-                      required
-                    >
-                      <option value="" disabled>
-                        Selecione um produto
-                      </option>
-                      {products.map((product) => (
-                        <option key={product.id} value={product.id}>
-                          {product.name} — {formatCurrency(product.pricePerUnit)}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+        <div className="grid gap-6 2xl:grid-cols-[minmax(0,420px),1fr]">
+          <div className="rounded-3xl bg-gradient-to-br from-primary/10 via-white to-white p-6 shadow-sm ring-1 ring-primary/10">
+            <header className="space-y-1">
+              <h3 className="text-lg font-semibold text-slate-900">Registrar novo envio</h3>
+              <p className="text-xs text-slate-600">
+                Informe data, itens e quantidades para o lote que sera enviado. Os custos sao calculados automaticamente.
+              </p>
+            </header>
 
-                  <div className="mt-3 flex items-end gap-2 md:mt-0">
-                    <div className="flex flex-col gap-1">
-                      <label className="text-xs font-medium text-slate-500">Quantidade</label>
-                      <input
-                        type="number"
-                        min={0}
-                        inputMode="numeric"
-                        value={line.quantitySent}
-                        onChange={(event) =>
-                          handleLineChange(
-                            line.id,
-                            'quantitySent',
-                            event.target.value.replace(/[^0-9]/g, ''),
-                          )
-                        }
-                        className="w-24 rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
-                        required
-                      />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveLine(line.id)}
-                      className="mt-5 inline-flex items-center justify-center rounded-md border border-red-200 px-2 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
-                      disabled={lines.length === 1}
-                    >
-                      Remover
-                    </button>
-                  </div>
+            <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <label htmlFor="sent-at" className="text-sm font-semibold text-slate-700">
+                    Data de envio
+                  </label>
+                  <input
+                    id="sent-at"
+                    type="date"
+                    value={sentAt}
+                    onChange={(event) => setSentAt(event.target.value)}
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    required
+                  />
                 </div>
-              ))}
-            </div>
+                <div className="space-y-2">
+                  <label htmlFor="expected-return" className="text-sm font-semibold text-slate-700">
+                    Previsao de retorno
+                  </label>
+                  <input
+                    id="expected-return"
+                    type="date"
+                    value={expectedReturnAt}
+                    onChange={(event) => setExpectedReturnAt(event.target.value)}
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  />
+                </div>
+              </div>
 
-            <button
-              type="button"
-              onClick={() => setLines((prev) => [...prev, createFormLine()])}
-              className="inline-flex w-fit items-center justify-center rounded-lg border border-dashed border-primary/40 px-4 py-2 text-sm font-semibold text-primary transition hover:border-primary hover:bg-primary/5"
-            >
-              Adicionar item
-            </button>
-          </div>
+              <div className="space-y-2">
+                <label htmlFor="notes" className="text-sm font-semibold text-slate-700">
+                  Observacoes (opcional)
+                </label>
+                <input
+                  id="notes"
+                  type="text"
+                  value={notes}
+                  onChange={(event) => setNotes(event.target.value)}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  placeholder="Ex.: Lote semanal, prioridade alta..."
+                />
+              </div>
 
-          <div className="flex flex-col justify-between gap-2 rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-600 md:flex-row md:items-center">
-            <span>
-              Total estimado do envio:{' '}
-              <strong className="text-slate-900">{formatCurrency(formTotalCost)}</strong>
-            </span>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 disabled:opacity-60"
-            >
-              {isSubmitting ? 'Registrando...' : 'Registrar envio'}
-            </button>
-          </div>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-slate-700">Itens do envio</span>
+                  <button
+                    type="button"
+                    onClick={() => setLines((prev) => [...prev, createFormLine()])}
+                    className="inline-flex items-center rounded-lg border border-dashed border-primary/50 px-3 py-1 text-xs font-semibold text-primary transition hover:border-primary hover:bg-primary/10"
+                  >
+                    Adicionar item
+                  </button>
+                </div>
 
-          {formError ? <p className="text-sm text-red-600">{formError}</p> : null}
-        </form>
-
-        <div className="flex flex-col gap-4">
-          <header className="flex items-center justify-between">
-            <h3 className="text-base font-semibold text-slate-900">Historico de envios</h3>
-            {shipmentDetails.length > 0 ? (
-              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                {shipmentDetails.length}{' '}
-                {shipmentDetails.length === 1 ? 'registro' : 'registros'}
-              </span>
-            ) : null}
-          </header>
-
-          {shipmentDetails.length === 0 ? (
-            <p className="text-sm text-slate-500">
-              Nenhum envio registrado ate agora. Utilize o formulario acima para comecar.
-            </p>
-          ) : (
-            <div className="flex flex-col gap-4">
-              {shipmentDetails.map((shipment) => (
-                <article
-                  key={shipment.id}
-                  className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm ring-1 ring-slate-100"
-                >
-                  <header className="flex flex-col gap-2 border-b border-slate-100 pb-3 text-sm text-slate-600 md:flex-row md:items-center md:justify-between">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary">
-                        Envio em {formatDate(shipment.sentAt)}
-                      </span>
-                      {shipment.expectedReturnAt ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-                          Retorno previsto: {formatDate(shipment.expectedReturnAt)}
-                        </span>
-                      ) : null}
-                      {shipment.notes ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-3 py-1 text-xs font-semibold text-accent">
-                          {shipment.notes}
-                        </span>
-                      ) : null}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveShipment(shipment.id)}
-                      disabled={removingId === shipment.id}
-                      className="self-start rounded-md border border-red-200 px-3 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-60"
+                <div className="space-y-3">
+                  {lines.map((line, index) => (
+                    <div
+                      key={line.id}
+                      className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm transition hover:border-primary/40"
                     >
-                      {removingId === shipment.id ? 'Removendo...' : 'Apagar registro'}
-                    </button>
-                  </header>
+                      <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr),140px,auto] sm:items-end">
+                        <div className="space-y-2">
+                          <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            Produto {index + 1}
+                          </label>
+                          <select
+                            value={line.productId}
+                            onChange={(event) =>
+                              handleLineChange(line.id, 'productId', event.target.value)
+                            }
+                            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
+                            required
+                          >
+                            <option value="" disabled>
+                              Selecione um produto
+                            </option>
+                            {products.map((product) => (
+                              <option key={product.id} value={product.id}>
+                                {product.name} — {formatCurrency(product.pricePerUnit)}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
 
-                  <div className="mt-3 overflow-hidden rounded-lg border border-slate-100">
-                    <table className="min-w-full divide-y divide-slate-100 text-sm">
-                      <thead className="bg-slate-50 text-left text-xs font-medium uppercase tracking-wide text-slate-600">
-                        <tr>
-                          <th scope="col" className="px-3 py-2">
-                            Item
-                          </th>
-                          <th scope="col" className="px-3 py-2 text-right">
-                            Qtde enviada
-                          </th>
-                          <th scope="col" className="px-3 py-2 text-right">
-                            Retorno
-                          </th>
-                          <th scope="col" className="px-3 py-2 text-right">
-                            Custo
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 bg-white">
-                        {shipment.items.map((item) => {
-                          const product = products.find((prod) => prod.id === item.productId);
-                          const price = product?.pricePerUnit ?? 0;
-                          const lineCost = item.quantitySent * price;
-                          return (
-                            <tr key={item.id} className="transition hover:bg-slate-50">
-                              <td className="px-3 py-2 text-slate-900">
-                                {product?.name ?? 'Produto removido'}
-                              </td>
-                              <td className="px-3 py-2 text-right text-slate-600">
-                                {item.quantitySent}
-                              </td>
-                              <td className="px-3 py-2 text-right">
-                                <input
-                                  type="number"
-                                  min={0}
-                                  max={item.quantitySent}
-                                  value={item.quantityReturned}
-                                  onChange={(event) =>
-                                    handleReturnChange(
-                                      shipment.id,
-                                      item.id,
-                                      event.target.value,
-                                    )
-                                  }
-                                  className="w-24 rounded-lg border border-slate-200 px-2 py-1 text-right text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
-                                />
-                                {updatingReturnId === item.id ? (
-                                  <span className="ml-2 text-xs text-slate-500">Salvando...</span>
-                                ) : null}
-                              </td>
-                              <td className="px-3 py-2 text-right text-slate-900">
-                                {formatCurrency(lineCost)}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
+                        <div className="space-y-2">
+                          <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            Quantidade
+                          </label>
+                          <input
+                            type="number"
+                            min={0}
+                            inputMode="numeric"
+                            value={line.quantitySent}
+                            onChange={(event) =>
+                              handleLineChange(
+                                line.id,
+                                'quantitySent',
+                                event.target.value.replace(/[^0-9]/g, ''),
+                              )
+                            }
+                            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
+                            required
+                          />
+                        </div>
 
-                  <footer className="mt-3 grid gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600 md:grid-cols-4">
-                    <span>
-                      Total enviado:{' '}
-                      <strong className="text-slate-900">{shipment.totalSent} pecas</strong>
-                    </span>
-                    <span>
-                      Retorno:{' '}
-                      <strong className="text-slate-900">{shipment.totalReturned} pecas</strong>
-                    </span>
-                    <span>
-                      Faltantes:{' '}
-                      <strong className="text-red-600">{shipment.totalMissing} pecas</strong>
-                    </span>
-                    <span>
-                      Custo do envio:{' '}
-                      <strong className="text-slate-900">{formatCurrency(shipment.totalCost)}</strong>
-                    </span>
-                  </footer>
-                </article>
-              ))}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveLine(line.id)}
+                          disabled={lines.length === 1}
+                          className="inline-flex h-10 items-center justify-center rounded-lg border border-red-200 px-3 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                        >
+                          Remover
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+                <span>
+                  Total estimado do envio:{' '}
+                  <strong className="text-slate-900">{formatCurrency(formTotalCost)}</strong>
+                </span>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 disabled:opacity-60"
+                >
+                  {isSubmitting ? 'Registrando...' : 'Registrar envio'}
+                </button>
+              </div>
+
+              {formError ? (
+                <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
+                  {formError}
+                </p>
+              ) : null}
+            </form>
+          </div>
+
+          <div className="rounded-3xl border border-slate-200 bg-white/95 shadow-sm">
+            <header className="flex flex-col gap-2 border-b border-slate-200 px-6 py-5 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+                  Historico de envios
+                </h3>
+                <p className="text-sm text-slate-600">
+                  Monitore retornos, faltas e custos por lote. Atualize os volumes retornados conforme a lavanderia devolve os itens.
+                </p>
+              </div>
+            </header>
+
+            <div className="space-y-4 px-4 py-6 sm:px-6">
+              {shipmentDetails.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/60 px-4 py-8 text-center text-sm text-slate-500">
+                  Nenhum envio registrado ainda. Utilize o formulario ao lado para iniciar o controle.
+                </div>
+              ) : (
+                shipmentDetails.map((shipment) => (
+                  <article
+                    key={shipment.id}
+                    className="rounded-2xl border border-slate-200 bg-white/80 p-5 shadow-sm transition hover:border-primary/40"
+                  >
+                    <header className="flex flex-col gap-3 border-b border-slate-100 pb-4 text-sm text-slate-600 lg:flex-row lg:items-center lg:justify-between">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary">
+                          Envio {formatDate(shipment.sentAt)}
+                        </span>
+                        {shipment.expectedReturnAt ? (
+                          <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                            Retorno previsto: {formatDate(shipment.expectedReturnAt)}
+                          </span>
+                        ) : null}
+                        {shipment.notes ? (
+                          <span className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-600">
+                            {shipment.notes}
+                          </span>
+                        ) : null}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveShipment(shipment.id)}
+                        disabled={removingId === shipment.id}
+                        className="inline-flex items-center justify-center rounded-lg border border-red-200 px-3 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-60"
+                      >
+                        {removingId === shipment.id ? 'Removendo...' : 'Apagar envio'}
+                      </button>
+                    </header>
+
+                    <div className="mt-4 overflow-hidden rounded-xl border border-slate-100">
+                      <table className="min-w-full divide-y divide-slate-100 text-sm">
+                        <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          <tr>
+                            <th scope="col" className="px-4 py-2">
+                              Item
+                            </th>
+                            <th scope="col" className="px-4 py-2 text-right">
+                              Enviadas
+                            </th>
+                            <th scope="col" className="px-4 py-2 text-right">
+                              Retorno
+                            </th>
+                            <th scope="col" className="px-4 py-2 text-right">
+                              Custo
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 bg-white">
+                          {shipment.items.map((item) => {
+                            const product = products.find((productItem) => productItem.id === item.productId);
+                            const price = product?.pricePerUnit ?? 0;
+                            const lineCost = item.quantitySent * price;
+                            return (
+                              <tr key={item.id} className="transition hover:bg-slate-50/60">
+                                <td className="px-4 py-2 text-sm font-semibold text-slate-900">
+                                  {product?.name ?? 'Produto removido'}
+                                </td>
+                                <td className="px-4 py-2 text-right text-slate-600">
+                                  {item.quantitySent}
+                                </td>
+                                <td className="px-4 py-2 text-right">
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    max={item.quantitySent}
+                                    value={item.quantityReturned}
+                                    onChange={(event) =>
+                                      handleReturnChange(
+                                        shipment.id,
+                                        item.id,
+                                        event.target.value,
+                                      )
+                                    }
+                                    className="w-24 rounded-lg border border-slate-300 px-2 py-1 text-right text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
+                                  />
+                                  {updatingReturnId === item.id ? (
+                                    <span className="ml-2 text-xs text-slate-500">Salvando...</span>
+                                  ) : null}
+                                </td>
+                                <td className="px-4 py-2 text-right text-slate-900">
+                                  {formatCurrency(lineCost)}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <footer className="mt-4 grid gap-2 rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600 md:grid-cols-2 xl:grid-cols-4">
+                      <span>
+                        Total enviado:{' '}
+                        <strong className="text-slate-900">{shipment.totalSent} pecas</strong>
+                      </span>
+                      <span>
+                        Retorno:{' '}
+                        <strong className="text-slate-900">{shipment.totalReturned} pecas</strong>
+                      </span>
+                      <span>
+                        Faltantes:{' '}
+                        <strong className={shipment.totalMissing > 0 ? 'text-amber-600' : 'text-slate-900'}>
+                          {shipment.totalMissing} pecas
+                        </strong>
+                      </span>
+                      <span>
+                        Custo do envio:{' '}
+                        <strong className="text-slate-900">{formatCurrency(shipment.totalCost)}</strong>
+                      </span>
+                    </footer>
+                  </article>
+                ))
+              )}
             </div>
-          )}
+          </div>
         </div>
       </div>
     </section>
   );
 };
+
+type StatBadgeProps = {
+  label: string;
+  value: string;
+  muted?: boolean;
+};
+
+const StatBadge = ({ label, value, muted = false }: StatBadgeProps) => (
+  <div
+    className={`rounded-2xl border border-slate-200 px-4 py-3 shadow-sm ${
+      muted ? 'bg-slate-50/80 text-slate-500' : 'bg-white text-slate-900'
+    }`}
+  >
+    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
+    <p className="mt-2 text-sm font-semibold">{value}</p>
+  </div>
+);

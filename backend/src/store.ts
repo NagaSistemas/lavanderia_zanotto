@@ -17,6 +17,9 @@ type ShipmentRecord = Shipment & {
   itemProductIds?: string[];
 };
 
+const removeUndefined = <T extends Record<string, unknown>>(data: T): T =>
+  Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined)) as T;
+
 const mapProductDoc = (doc: DocumentSnapshot): Product => {
   const data = doc.data() as Product | undefined;
   if (!data) {
@@ -71,7 +74,7 @@ export const createProduct = async (ownerId: string, input: ProductInput): Promi
     updatedAt: now,
   };
 
-  await docRef.set(product);
+  await docRef.set(removeUndefined(product));
   return product;
 };
 
@@ -97,7 +100,7 @@ export const updateProduct = async (
     updatedAt: new Date().toISOString(),
   };
 
-  await docRef.set(updated);
+  await docRef.set(removeUndefined(updated));
   return updated;
 };
 
@@ -189,7 +192,7 @@ export const createShipment = async (
     updatedAt: now,
   };
 
-  await docRef.set(shipmentRecord);
+  await docRef.set(removeUndefined(shipmentRecord));
   return {
     id: shipmentRecord.id,
     ownerId,
@@ -225,7 +228,7 @@ export const updateShipmentMeta = async (
     updatedAt: new Date().toISOString(),
   };
 
-  await docRef.set(updated);
+  await docRef.set(removeUndefined(updated));
   return mapShipmentDoc(await docRef.get());
 };
 
@@ -270,7 +273,7 @@ export const updateShipmentReturns = async (
     updatedAt: new Date().toISOString(),
   };
 
-  await docRef.set(updated);
+  await docRef.set(removeUndefined(updated));
   return mapShipmentDoc(await docRef.get());
 };
 
