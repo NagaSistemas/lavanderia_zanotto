@@ -89,19 +89,22 @@ export const ReportsSection = () => {
   };
 
   return (
-    <section aria-labelledby="reports-section">
-      <div className="space-y-6">
-        <div className="rounded-3xl bg-white/90 p-6 shadow-sm ring-1 ring-slate-200 md:p-8">
+    <section
+      aria-labelledby="reports-section"
+      className="mx-auto w-full max-w-5xl px-3 pb-6 sm:px-4 lg:px-0"
+    >
+      <div className="space-y-4 sm:space-y-6">
+        <div className="rounded-2xl bg-white/90 p-4 shadow-sm ring-1 ring-slate-200 sm:rounded-3xl sm:p-6 md:p-8">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="max-w-2xl space-y-2">
-              <h2 id="reports-section" className="text-xl font-semibold text-slate-900 md:text-2xl">
+              <h2 id="reports-section" className="text-lg font-semibold text-slate-900 sm:text-xl md:text-2xl">
                 Relatorios financeiros
               </h2>
               <p className="text-sm text-slate-600">
                 Consulte o historico de envios por mes, compare volumes enviados versus retornados e exporte os dados para conciliacao financeira ou auditoria.
               </p>
             </div>
-            <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-xs text-slate-600 sm:text-sm">
+            <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-3 text-xs text-slate-600 sm:flex-row sm:items-center sm:text-sm">
               <label htmlFor="report-month" className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Mes de referencia
               </label>
@@ -110,7 +113,7 @@ export const ReportsSection = () => {
                 type="month"
                 value={monthKey}
                 onChange={(event) => setMonthKey(event.target.value)}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40 sm:w-auto"
                 min={months.at(-1)}
                 max={months[0]}
               />
@@ -126,7 +129,7 @@ export const ReportsSection = () => {
           </div>
         </div>
 
-        <div className="rounded-3xl border border-slate-200 bg-white/95 p-6 shadow-sm">
+        <div className="rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-sm sm:rounded-3xl sm:p-6">
           <div className="flex flex-col gap-2 border-b border-slate-200 pb-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
@@ -134,7 +137,7 @@ export const ReportsSection = () => {
               </h3>
               <p className="text-sm text-slate-600">{formatMonthLabel(monthKey)}</p>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-2 grid-cols-2 sm:gap-3 lg:grid-cols-4">
               <StatBadge label="Envios" value={filteredShipments.length.toString()} />
               <StatBadge
                 label="Total enviado"
@@ -152,63 +155,67 @@ export const ReportsSection = () => {
             </div>
           </div>
 
-          <div className="mt-4 overflow-hidden rounded-2xl border border-slate-100">
-            <table className="min-w-full divide-y divide-slate-100 text-sm">
-              <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                <tr>
-                  <th scope="col" className="px-4 py-3">Data</th>
-                  <th scope="col" className="px-4 py-3">Itens</th>
-                  <th scope="col" className="px-4 py-3 text-right">Enviadas</th>
-                  <th scope="col" className="px-4 py-3 text-right">Retornadas</th>
-                  <th scope="col" className="px-4 py-3 text-right">Faltantes</th>
-                  <th scope="col" className="px-4 py-3 text-right">Custo</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 bg-white">
-                {filteredShipments.length === 0 ? (
+          <div className="mt-4 -mx-4 sm:mx-0 sm:overflow-hidden sm:rounded-2xl sm:border sm:border-slate-100">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-slate-100 text-sm">
+                <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-sm text-slate-500">
-                      Sem registros para o periodo selecionado.
-                    </td>
+                    <th scope="col" className="px-2 py-2 sm:px-4 sm:py-3">Data</th>
+                    <th scope="col" className="px-2 py-2 sm:px-4 sm:py-3">Itens</th>
+                    <th scope="col" className="px-2 py-2 text-right sm:px-4 sm:py-3">Env.</th>
+                    <th scope="col" className="px-2 py-2 text-right sm:px-4 sm:py-3">Ret.</th>
+                    <th scope="col" className="px-2 py-2 text-right sm:px-4 sm:py-3">Falt.</th>
+                    <th scope="col" className="px-2 py-2 text-right sm:px-4 sm:py-3">Custo</th>
                   </tr>
-                ) : (
-                  filteredShipments.map((shipment) => (
-                    <tr key={shipment.id} className="align-top transition hover:bg-slate-50/60">
-                      <td className="px-4 py-3 text-sm font-semibold text-slate-900">
-                        {formatDate(shipment.sentAt)}
-                      </td>
-                      <td className="px-4 py-3 text-slate-600">
-                        <ul className="list-inside list-disc space-y-1 text-xs text-slate-500">
-                          {shipment.items.map((item) => {
-                            const product = products.find((p) => p.id === item.productId);
-                            return (
-                              <li key={item.id}>
-                                {product?.name ?? 'Produto removido'} — {item.quantitySent} pecas
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      </td>
-                      <td className="px-4 py-3 text-right text-slate-600">
-                        {shipment.totalSent.toLocaleString('pt-BR')}
-                      </td>
-                      <td className="px-4 py-3 text-right text-slate-600">
-                        {shipment.totalReturned.toLocaleString('pt-BR')}
-                      </td>
-                      <td className="px-4 py-3 text-right text-amber-600">
-                        {shipment.totalMissing.toLocaleString('pt-BR')}
-                      </td>
-                      <td className="px-4 py-3 text-right text-slate-900">
-                        {formatCurrency(shipment.totalCost)}
+                </thead>
+                <tbody className="divide-y divide-slate-100 bg-white">
+                  {filteredShipments.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-2 py-8 text-center text-sm text-slate-500 sm:px-4">
+                        Sem registros para o periodo selecionado.
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    filteredShipments.map((shipment) => (
+                      <tr key={shipment.id} className="align-top transition hover:bg-slate-50/60">
+                        <td className="px-2 py-2 text-xs font-semibold text-slate-900 sm:px-4 sm:py-3 sm:text-sm">
+                          {formatDate(shipment.sentAt)}
+                        </td>
+                        <td className="px-2 py-2 text-slate-600 sm:px-4 sm:py-3">
+                          <div className="max-w-[120px] sm:max-w-none">
+                            <ul className="list-inside list-disc space-y-1 text-xs text-slate-500">
+                              {shipment.items.map((item) => {
+                                const product = products.find((p) => p.id === item.productId);
+                                return (
+                                  <li key={item.id} className="truncate">
+                                    {product?.name ?? 'Produto removido'} — {item.quantitySent}
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </div>
+                        </td>
+                        <td className="px-2 py-2 text-right text-slate-600 sm:px-4 sm:py-3">
+                          {shipment.totalSent.toLocaleString('pt-BR')}
+                        </td>
+                        <td className="px-2 py-2 text-right text-slate-600 sm:px-4 sm:py-3">
+                          {shipment.totalReturned.toLocaleString('pt-BR')}
+                        </td>
+                        <td className="px-2 py-2 text-right text-amber-600 sm:px-4 sm:py-3">
+                          {shipment.totalMissing.toLocaleString('pt-BR')}
+                        </td>
+                        <td className="px-2 py-2 text-right text-slate-900 sm:px-4 sm:py-3">
+                          <div className="truncate max-w-[60px] sm:max-w-none">{formatCurrency(shipment.totalCost)}</div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
 
-          <footer className="mt-4 grid gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600 md:grid-cols-2 xl:grid-cols-4">
+          <footer className="mt-4 grid gap-2 rounded-2xl bg-slate-50 px-3 py-3 text-xs text-slate-600 sm:px-4 sm:text-sm md:grid-cols-2 xl:grid-cols-4">
             <span>
               Total enviado:{' '}
               <strong className="text-slate-900">

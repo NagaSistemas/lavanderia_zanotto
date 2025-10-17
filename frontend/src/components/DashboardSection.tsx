@@ -44,12 +44,15 @@ export const DashboardSection = () => {
   }, [shipments, monthKey, products]);
 
   return (
-    <section aria-labelledby="dashboard-section">
-      <div className="space-y-6">
-        <div className="rounded-3xl bg-gradient-to-br from-primary/10 via-surface to-white p-6 shadow-sm ring-1 ring-slate-100 md:p-8">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+    <section
+      aria-labelledby="dashboard-section"
+      className="mx-auto w-full max-w-5xl px-3 pb-6 sm:px-4 lg:px-0"
+    >
+      <div className="space-y-4 sm:space-y-6">
+        <div className="rounded-2xl bg-gradient-to-br from-primary/10 via-surface to-white p-4 shadow-sm ring-1 ring-slate-100 sm:rounded-3xl sm:p-6 md:p-8">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="max-w-2xl space-y-2">
-              <h2 id="dashboard-section" className="text-xl font-semibold text-slate-900 md:text-2xl">
+              <h2 id="dashboard-section" className="text-lg font-semibold text-slate-900 sm:text-xl md:text-2xl">
                 Visao geral do periodo
               </h2>
               <p className="text-sm text-slate-600">
@@ -57,7 +60,7 @@ export const DashboardSection = () => {
                 Os dados sao atualizados em tempo real conforme voce registra envios e retornos.
               </p>
             </div>
-            <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-white/80 px-4 py-3 text-sm text-slate-600 shadow-sm">
+            <div className="flex flex-col gap-3 rounded-2xl bg-white/80 p-3 text-sm text-slate-600 shadow-sm sm:flex-row sm:items-center">
               <label htmlFor="month-filter" className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Mes de referencia
               </label>
@@ -66,13 +69,13 @@ export const DashboardSection = () => {
                 type="month"
                 value={monthKey}
                 onChange={(event) => setMonthKey(event.target.value)}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40 sm:w-auto"
                 min={availableMonths.at(-1)}
                 max={availableMonths[0]}
               />
               {toDateRange ? (
                 <span className="text-xs text-slate-500">
-                  Periodo analisado: {formatDate(toDateRange.start)} a {formatDate(toDateRange.end)}
+                  Periodo: {formatDate(toDateRange.start)} a {formatDate(toDateRange.end)}
                 </span>
               ) : (
                 <span className="text-xs text-slate-500">Sem movimentacoes registradas</span>
@@ -80,7 +83,7 @@ export const DashboardSection = () => {
             </div>
           </div>
 
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-4 grid gap-3 sm:mt-6 sm:gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <SummaryCard
               title="Pecas enviadas"
               value={formatPieces(metrics.totalSent)}
@@ -121,8 +124,8 @@ export const DashboardSection = () => {
           </div>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          <div className="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm">
+        <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
+          <div className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm sm:rounded-3xl sm:p-6">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
@@ -133,47 +136,49 @@ export const DashboardSection = () => {
                 </p>
               </div>
             </div>
-            <div className="mt-4 overflow-hidden rounded-2xl border border-slate-100">
-              <table className="min-w-full divide-y divide-slate-100 text-sm">
-                <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  <tr>
-                    <th scope="col" className="px-4 py-3">Produto</th>
-                    <th scope="col" className="px-4 py-3 text-right">Enviadas</th>
-                    <th scope="col" className="px-4 py-3 text-right">Retornadas</th>
-                    <th scope="col" className="px-4 py-3 text-right">Custo</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 bg-white">
-                  {metrics.productBreakdown.length === 0 ? (
+            <div className="mt-4 -mx-4 sm:mx-0 sm:overflow-hidden sm:rounded-2xl sm:border sm:border-slate-100">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-slate-100 text-sm">
+                  <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                     <tr>
-                      <td colSpan={4} className="px-4 py-6 text-center text-sm text-slate-500">
-                        Nenhum dado disponivel para o mes selecionado.
-                      </td>
+                      <th scope="col" className="px-3 py-2 sm:px-4 sm:py-3">Produto</th>
+                      <th scope="col" className="px-3 py-2 text-right sm:px-4 sm:py-3">Enviadas</th>
+                      <th scope="col" className="px-3 py-2 text-right sm:px-4 sm:py-3">Retornadas</th>
+                      <th scope="col" className="px-3 py-2 text-right sm:px-4 sm:py-3">Custo</th>
                     </tr>
-                  ) : (
-                    metrics.productBreakdown.map((item) => (
-                      <tr key={item.productId} className="transition hover:bg-slate-50/60">
-                        <td className="px-4 py-3 text-sm font-semibold text-slate-900">
-                          {item.productName}
-                        </td>
-                        <td className="px-4 py-3 text-right text-slate-600">
-                          {item.quantitySent.toLocaleString('pt-BR')}
-                        </td>
-                        <td className="px-4 py-3 text-right text-slate-600">
-                          {item.quantityReturned.toLocaleString('pt-BR')}
-                        </td>
-                        <td className="px-4 py-3 text-right text-slate-900">
-                          {formatCurrency(item.totalCost)}
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 bg-white">
+                    {metrics.productBreakdown.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="px-3 py-6 text-center text-sm text-slate-500 sm:px-4">
+                          Nenhum dado disponivel para o mes selecionado.
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                    ) : (
+                      metrics.productBreakdown.map((item) => (
+                        <tr key={item.productId} className="transition hover:bg-slate-50/60">
+                          <td className="px-3 py-2 text-sm font-semibold text-slate-900 sm:px-4 sm:py-3">
+                            <div className="truncate max-w-[120px] sm:max-w-none">{item.productName}</div>
+                          </td>
+                          <td className="px-3 py-2 text-right text-slate-600 sm:px-4 sm:py-3">
+                            {item.quantitySent.toLocaleString('pt-BR')}
+                          </td>
+                          <td className="px-3 py-2 text-right text-slate-600 sm:px-4 sm:py-3">
+                            {item.quantityReturned.toLocaleString('pt-BR')}
+                          </td>
+                          <td className="px-3 py-2 text-right text-slate-900 sm:px-4 sm:py-3">
+                            {formatCurrency(item.totalCost)}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
 
-          <div className="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm">
+          <div className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm sm:rounded-3xl sm:p-6">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
@@ -182,47 +187,49 @@ export const DashboardSection = () => {
                 <p className="text-sm text-slate-600">{formatMonthLabel(metrics.monthKey)}</p>
               </div>
             </div>
-            <div className="mt-4 overflow-hidden rounded-2xl border border-slate-100">
-              <table className="min-w-full divide-y divide-slate-100 text-sm">
-                <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  <tr>
-                    <th scope="col" className="px-4 py-3">Data</th>
-                    <th scope="col" className="px-4 py-3 text-right">Enviadas</th>
-                    <th scope="col" className="px-4 py-3 text-right">Retornadas</th>
-                    <th scope="col" className="px-4 py-3 text-right">Faltantes</th>
-                    <th scope="col" className="px-4 py-3 text-right">Custo</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 bg-white">
-                  {metrics.dailyTotals.length === 0 ? (
+            <div className="mt-4 -mx-4 sm:mx-0 sm:overflow-hidden sm:rounded-2xl sm:border sm:border-slate-100">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-slate-100 text-sm">
+                  <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                     <tr>
-                      <td colSpan={5} className="px-4 py-6 text-center text-sm text-slate-500">
-                        Nenhuma movimentacao registrada neste mes.
-                      </td>
+                      <th scope="col" className="px-2 py-2 sm:px-4 sm:py-3">Data</th>
+                      <th scope="col" className="px-2 py-2 text-right sm:px-4 sm:py-3">Env.</th>
+                      <th scope="col" className="px-2 py-2 text-right sm:px-4 sm:py-3">Ret.</th>
+                      <th scope="col" className="px-2 py-2 text-right sm:px-4 sm:py-3">Falt.</th>
+                      <th scope="col" className="px-2 py-2 text-right sm:px-4 sm:py-3">Custo</th>
                     </tr>
-                  ) : (
-                    metrics.dailyTotals.map((day) => (
-                      <tr key={day.date} className="transition hover:bg-slate-50/60">
-                        <td className="px-4 py-3 text-sm font-semibold text-slate-900">
-                          {formatDate(day.date)}
-                        </td>
-                        <td className="px-4 py-3 text-right text-slate-600">
-                          {day.sent.toLocaleString('pt-BR')}
-                        </td>
-                        <td className="px-4 py-3 text-right text-slate-600">
-                          {day.returned.toLocaleString('pt-BR')}
-                        </td>
-                        <td className="px-4 py-3 text-right text-amber-600">
-                          {day.missing.toLocaleString('pt-BR')}
-                        </td>
-                        <td className="px-4 py-3 text-right text-slate-900">
-                          {formatCurrency(day.cost)}
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 bg-white">
+                    {metrics.dailyTotals.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-2 py-6 text-center text-sm text-slate-500 sm:px-4">
+                          Nenhuma movimentacao registrada neste mes.
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                    ) : (
+                      metrics.dailyTotals.map((day) => (
+                        <tr key={day.date} className="transition hover:bg-slate-50/60">
+                          <td className="px-2 py-2 text-xs font-semibold text-slate-900 sm:px-4 sm:py-3 sm:text-sm">
+                            {formatDate(day.date)}
+                          </td>
+                          <td className="px-2 py-2 text-right text-slate-600 sm:px-4 sm:py-3">
+                            {day.sent.toLocaleString('pt-BR')}
+                          </td>
+                          <td className="px-2 py-2 text-right text-slate-600 sm:px-4 sm:py-3">
+                            {day.returned.toLocaleString('pt-BR')}
+                          </td>
+                          <td className="px-2 py-2 text-right text-amber-600 sm:px-4 sm:py-3">
+                            {day.missing.toLocaleString('pt-BR')}
+                          </td>
+                          <td className="px-2 py-2 text-right text-slate-900 sm:px-4 sm:py-3">
+                            <div className="truncate max-w-[60px] sm:max-w-none">{formatCurrency(day.cost)}</div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>

@@ -5,8 +5,28 @@
 body {
   @apply bg-surface text-slate-900 min-h-screen;
   font-feature-settings: "liga" 1, "kern" 1;
+  overflow-x: hidden;
 }
 
 #root {
   @apply min-h-screen;
+  overflow-x: hidden;
+}
+
+/* Prevent horizontal scroll on mobile */
+* {
+  box-sizing: border-box;
+}
+
+/* Ensure tables don't break layout */
+table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+/* Better text truncation */
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

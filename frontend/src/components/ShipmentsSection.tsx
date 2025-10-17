@@ -147,19 +147,22 @@ export const ShipmentsSection = () => {
   const totalCost = shipmentDetails.reduce((acc, shipment) => acc + shipment.totalCost, 0);
 
   return (
-    <section aria-labelledby="shipments-section">
-      <div className="space-y-6">
-        <div className="rounded-3xl bg-white/90 p-6 shadow-sm ring-1 ring-slate-200 md:p-8">
+    <section
+      aria-labelledby="shipments-section"
+      className="mx-auto w-full max-w-5xl px-3 pb-6 sm:px-4 lg:px-0"
+    >
+      <div className="space-y-4 sm:space-y-6">
+        <div className="rounded-2xl bg-white/90 p-4 shadow-sm ring-1 ring-slate-200 sm:rounded-3xl sm:p-6 md:p-8">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div className="max-w-2xl space-y-2">
-              <h2 id="shipments-section" className="text-xl font-semibold text-slate-900 md:text-2xl">
+              <h2 id="shipments-section" className="text-lg font-semibold text-slate-900 sm:text-xl md:text-2xl">
                 Controle de envios
               </h2>
               <p className="text-sm text-slate-600">
                 Registre os lotes enviados para a lavanderia, acompanhe retornos e mantenha o histórico organizado. As informações alimentam relatórios financeiros e alertas operacionais.
               </p>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-2 grid-cols-2 sm:gap-3 lg:grid-cols-4">
               <StatBadge label="Envios registrados" value={totalShipments.toString()} />
               <StatBadge label="Pecas enviadas" value={totalSent.toLocaleString('pt-BR')} />
               <StatBadge label="Pecas pendentes" value={totalMissing.toLocaleString('pt-BR')} muted={totalMissing === 0} />
@@ -168,16 +171,16 @@ export const ShipmentsSection = () => {
           </div>
         </div>
 
-        <div className="grid gap-6 2xl:grid-cols-[minmax(0,420px),1fr]">
-          <div className="rounded-3xl bg-gradient-to-br from-primary/10 via-white to-white p-6 shadow-sm ring-1 ring-primary/10">
+        <div className="grid gap-4 sm:gap-6 2xl:grid-cols-[minmax(0,420px),1fr]">
+          <div className="rounded-2xl bg-gradient-to-br from-primary/10 via-white to-white p-4 shadow-sm ring-1 ring-primary/10 sm:rounded-3xl sm:p-6">
             <header className="space-y-1">
-              <h3 className="text-lg font-semibold text-slate-900">Registrar novo envio</h3>
+              <h3 className="text-base font-semibold text-slate-900 sm:text-lg">Registrar novo envio</h3>
               <p className="text-xs text-slate-600">
                 Informe data, itens e quantidades para o lote que sera enviado. Os custos sao calculados automaticamente.
               </p>
             </header>
 
-            <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+            <form className="mt-4 space-y-4 sm:mt-6" onSubmit={handleSubmit}>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <label htmlFor="sent-at" className="text-sm font-semibold text-slate-700">
@@ -236,9 +239,9 @@ export const ShipmentsSection = () => {
                   {lines.map((line, index) => (
                     <div
                       key={line.id}
-                      className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm transition hover:border-primary/40"
+                      className="rounded-xl border border-slate-200 bg-white/90 p-3 shadow-sm transition hover:border-primary/40 sm:rounded-2xl sm:p-4"
                     >
-                      <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr),140px,auto] sm:items-end">
+                      <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr),120px,auto] sm:items-end">
                         <div className="space-y-2">
                           <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                             Produto {index + 1}
@@ -287,7 +290,7 @@ export const ShipmentsSection = () => {
                           type="button"
                           onClick={() => handleRemoveLine(line.id)}
                           disabled={lines.length === 1}
-                          className="inline-flex h-10 items-center justify-center rounded-lg border border-red-200 px-3 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                          className="inline-flex h-10 items-center justify-center rounded-lg border border-red-200 px-2 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50 sm:px-3"
                         >
                           Remover
                         </button>
@@ -319,8 +322,8 @@ export const ShipmentsSection = () => {
             </form>
           </div>
 
-          <div className="rounded-3xl border border-slate-200 bg-white/95 shadow-sm">
-            <header className="flex flex-col gap-2 border-b border-slate-200 px-6 py-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="rounded-2xl border border-slate-200 bg-white/95 shadow-sm sm:rounded-3xl">
+            <header className="flex flex-col gap-2 border-b border-slate-200 px-4 py-4 sm:px-6 sm:py-5 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
                   Historico de envios
@@ -331,29 +334,29 @@ export const ShipmentsSection = () => {
               </div>
             </header>
 
-            <div className="space-y-4 px-4 py-6 sm:px-6">
+            <div className="space-y-4 px-3 py-4 sm:px-6 sm:py-6">
               {shipmentDetails.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/60 px-4 py-8 text-center text-sm text-slate-500">
+                <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/60 px-4 py-8 text-center text-sm text-slate-500 sm:rounded-2xl">
                   Nenhum envio registrado ainda. Utilize o formulario ao lado para iniciar o controle.
                 </div>
               ) : (
                 shipmentDetails.map((shipment) => (
                   <article
                     key={shipment.id}
-                    className="rounded-2xl border border-slate-200 bg-white/80 p-5 shadow-sm transition hover:border-primary/40"
+                    className="rounded-xl border border-slate-200 bg-white/80 p-4 shadow-sm transition hover:border-primary/40 sm:rounded-2xl sm:p-5"
                   >
                     <header className="flex flex-col gap-3 border-b border-slate-100 pb-4 text-sm text-slate-600 lg:flex-row lg:items-center lg:justify-between">
-                      <div className="flex flex-wrap items-center gap-3">
-                        <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary">
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                        <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-primary sm:px-3">
                           Envio {formatDate(shipment.sentAt)}
                         </span>
                         {shipment.expectedReturnAt ? (
-                          <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-                            Retorno previsto: {formatDate(shipment.expectedReturnAt)}
+                          <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600 sm:px-3">
+                            Retorno: {formatDate(shipment.expectedReturnAt)}
                           </span>
                         ) : null}
                         {shipment.notes ? (
-                          <span className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-600">
+                          <span className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-600 sm:px-3">
                             {shipment.notes}
                           </span>
                         ) : null}
@@ -362,73 +365,77 @@ export const ShipmentsSection = () => {
                         type="button"
                         onClick={() => handleRemoveShipment(shipment.id)}
                         disabled={removingId === shipment.id}
-                        className="inline-flex items-center justify-center rounded-lg border border-red-200 px-3 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-60"
+                        className="inline-flex items-center justify-center rounded-lg border border-red-200 px-2 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-60 sm:px-3"
                       >
                         {removingId === shipment.id ? 'Removendo...' : 'Apagar envio'}
                       </button>
                     </header>
 
-                    <div className="mt-4 overflow-hidden rounded-xl border border-slate-100">
-                      <table className="min-w-full divide-y divide-slate-100 text-sm">
-                        <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                          <tr>
-                            <th scope="col" className="px-4 py-2">
-                              Item
-                            </th>
-                            <th scope="col" className="px-4 py-2 text-right">
-                              Enviadas
-                            </th>
-                            <th scope="col" className="px-4 py-2 text-right">
-                              Retorno
-                            </th>
-                            <th scope="col" className="px-4 py-2 text-right">
-                              Custo
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 bg-white">
-                          {shipment.items.map((item) => {
-                            const product = products.find((productItem) => productItem.id === item.productId);
-                            const price = product?.pricePerUnit ?? 0;
-                            const lineCost = item.quantitySent * price;
-                            return (
-                              <tr key={item.id} className="transition hover:bg-slate-50/60">
-                                <td className="px-4 py-2 text-sm font-semibold text-slate-900">
-                                  {product?.name ?? 'Produto removido'}
-                                </td>
-                                <td className="px-4 py-2 text-right text-slate-600">
-                                  {item.quantitySent}
-                                </td>
-                                <td className="px-4 py-2 text-right">
-                                  <input
-                                    type="number"
-                                    min={0}
-                                    max={item.quantitySent}
-                                    value={item.quantityReturned}
-                                    onChange={(event) =>
-                                      handleReturnChange(
-                                        shipment.id,
-                                        item.id,
-                                        event.target.value,
-                                      )
-                                    }
-                                    className="w-24 rounded-lg border border-slate-300 px-2 py-1 text-right text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
-                                  />
-                                  {updatingReturnId === item.id ? (
-                                    <span className="ml-2 text-xs text-slate-500">Salvando...</span>
-                                  ) : null}
-                                </td>
-                                <td className="px-4 py-2 text-right text-slate-900">
-                                  {formatCurrency(lineCost)}
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
+                    <div className="mt-4 -mx-4 sm:mx-0 sm:overflow-hidden sm:rounded-xl sm:border sm:border-slate-100">
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-slate-100 text-sm">
+                          <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            <tr>
+                              <th scope="col" className="px-2 py-2 sm:px-4">
+                                Item
+                              </th>
+                              <th scope="col" className="px-2 py-2 text-right sm:px-4">
+                                Env.
+                              </th>
+                              <th scope="col" className="px-2 py-2 text-right sm:px-4">
+                                Retorno
+                              </th>
+                              <th scope="col" className="px-2 py-2 text-right sm:px-4">
+                                Custo
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 bg-white">
+                            {shipment.items.map((item) => {
+                              const product = products.find((productItem) => productItem.id === item.productId);
+                              const price = product?.pricePerUnit ?? 0;
+                              const lineCost = item.quantitySent * price;
+                              return (
+                                <tr key={item.id} className="transition hover:bg-slate-50/60">
+                                  <td className="px-2 py-2 text-xs font-semibold text-slate-900 sm:px-4 sm:text-sm">
+                                    <div className="truncate max-w-[80px] sm:max-w-none">{product?.name ?? 'Produto removido'}</div>
+                                  </td>
+                                  <td className="px-2 py-2 text-right text-slate-600 sm:px-4">
+                                    {item.quantitySent}
+                                  </td>
+                                  <td className="px-2 py-2 text-right sm:px-4">
+                                    <div className="flex flex-col items-end gap-1">
+                                      <input
+                                        type="number"
+                                        min={0}
+                                        max={item.quantitySent}
+                                        value={item.quantityReturned}
+                                        onChange={(event) =>
+                                          handleReturnChange(
+                                            shipment.id,
+                                            item.id,
+                                            event.target.value,
+                                          )
+                                        }
+                                        className="w-16 rounded-lg border border-slate-300 px-2 py-1 text-right text-xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40 sm:w-20 sm:text-sm"
+                                      />
+                                      {updatingReturnId === item.id ? (
+                                        <span className="text-xs text-slate-500">Salvando...</span>
+                                      ) : null}
+                                    </div>
+                                  </td>
+                                  <td className="px-2 py-2 text-right text-slate-900 sm:px-4">
+                                    <div className="truncate max-w-[60px] sm:max-w-none">{formatCurrency(lineCost)}</div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
 
-                    <footer className="mt-4 grid gap-2 rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600 md:grid-cols-2 xl:grid-cols-4">
+                    <footer className="mt-4 grid gap-2 rounded-xl bg-slate-50 px-3 py-3 text-xs text-slate-600 sm:px-4 sm:text-sm md:grid-cols-2 xl:grid-cols-4">
                       <span>
                         Total enviado:{' '}
                         <strong className="text-slate-900">{shipment.totalSent} pecas</strong>
