@@ -1,8 +1,9 @@
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
-import productsRouter from './routes/products';
-import shipmentsRouter from './routes/shipments';
+import productsRouter from './routes/products.js';
+import shipmentsRouter from './routes/shipments.js';
+import authenticate from './middleware/authenticate.js';
 
 const app = express();
 
@@ -18,6 +19,7 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+app.use('/api', authenticate);
 app.use('/api/products', productsRouter);
 app.use('/api/shipments', shipmentsRouter);
 

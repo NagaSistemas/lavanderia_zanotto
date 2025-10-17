@@ -1,217 +1,250 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from 'react';
+import { useAuth } from './AuthContext';
 import {
   type LaundryState,
   type Product,
   type ProductPayload,
   type Shipment,
   type ShipmentPayload,
-  type ShipmentLine,
 } from '../types';
 
 type LaundryContextValue = {
   state: LaundryState;
-  addProduct: (payload: ProductPayload) => void;
-  updateProduct: (id: string, payload: ProductPayload) => void;
-  removeProduct: (id: string) => void;
-  addShipment: (payload: ShipmentPayload) => void;
+  loading: boolean;
+  error: string | null;
+  refresh: () => Promise<void>;
+  addProduct: (payload: ProductPayload) => Promise<void>;
+  updateProduct: (id: string, payload: ProductPayload) => Promise<void>;
+  removeProduct: (id: string) => Promise<void>;
+  addShipment: (payload: ShipmentPayload) => Promise<void>;
   updateShipmentReturn: (
     shipmentId: string,
     lineId: string,
     quantityReturned: number,
-  ) => void;
-  removeShipment: (shipmentId: string) => void;
+  ) => Promise<void>;
+  removeShipment: (shipmentId: string) => Promise<void>;
 };
 
-const STORAGE_KEY = 'lavanderia-control-state';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ?? '';
 
 const LaundryContext = createContext<LaundryContextValue | undefined>(undefined);
 
-const defaultState: LaundryState = {
+const initialState: LaundryState = {
   products: [],
   shipments: [],
 };
 
-const isBrowser = typeof window !== 'undefined';
-
-const generateId = () =>
-  typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-    ? crypto.randomUUID()
-    : `id-${Math.random().toString(36).slice(2)}${Date.now()}`;
-
-const loadState = (): LaundryState => {
-  if (!isBrowser) {
-    return defaultState;
-  }
-
-  try {
-    const stored = window.localStorage.getItem(STORAGE_KEY);
-    if (!stored) {
-      return defaultState;
-    }
-
-    const parsed = JSON.parse(stored) as LaundryState;
-    return {
-      products: parsed.products ?? [],
-      shipments: parsed.shipments ?? [],
-    };
-  } catch (error) {
-    console.error('Erro ao carregar estado da lavanderia', error);
-    return defaultState;
-  }
-};
-
-const persistState = (state: LaundryState) => {
-  if (!isBrowser) {
-    return;
-  }
-
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch (error) {
-    console.error('Erro ao salvar estado da lavanderia', error);
-  }
-};
-
-const withTimestamps = <T extends object>(data: T, previous?: { createdAt: string }) => {
-  const now = new Date().toISOString();
-  return {
-    ...data,
-    createdAt: previous?.createdAt ?? now,
-    updatedAt: now,
-  };
-};
+const buildUrl = (path: string) => `${API_BASE_URL}${path}`;
 
 export const LaundryProvider = ({ children }: { children: ReactNode }) => {
-  const [state, setState] = useState<LaundryState>(() => loadState());
+  const { user, loading: authLoading, getToken } = useAuth();
+  const [state, setState] = useState<LaundryState>(initialState);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    persistState(state);
-  }, [state]);
+  const authorizedRequest = useCallback(
+    async <T,>(path: string, options: RequestInit = {}) => {
+      const token = await getToken();
+      if (!token) {
+        throw new Error('Sessao expirada. Faca login novamente.');
+      }
 
-  const actions = useMemo(() => {
-    const addProduct = (payload: ProductPayload) => {
-      const next: Product = withTimestamps({
-        id: generateId(),
-        ...payload,
+      const headers = new Headers(options.headers);
+      if (!headers.has('Content-Type') && options.body) {
+        headers.set('Content-Type', 'application/json');
+      }
+      headers.set('Accept', 'application/json');
+      headers.set('Authorization', `Bearer ${token}`);
+
+      const response = await fetch(buildUrl(path), {
+        ...options,
+        headers,
       });
 
+      if (response.status === 204) {
+        return null as T;
+      }
+
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        const message =
+          (payload && (payload.message as string)) ||
+          `Erro na requisicao (${response.status})`;
+        throw new Error(message);
+      }
+
+      return payload as T;
+    },
+    [getToken],
+  );
+
+  const refresh = useCallback(async () => {
+    if (authLoading) {
+      return;
+    }
+
+    if (!user) {
+      setState(initialState);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const [products, shipments] = await Promise.all([
+        authorizedRequest<Product[]>('/api/products'),
+        authorizedRequest<Shipment[]>('/api/shipments'),
+      ]);
+      setState({
+        products,
+        shipments,
+      });
+      setError(null);
+    } catch (requestError) {
+      console.error('Erro ao carregar dados da lavanderia', requestError);
+      setError(
+        requestError instanceof Error ? requestError.message : 'Falha ao carregar dados',
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [authLoading, user, authorizedRequest]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  const addProduct = useCallback(
+    async (payload: ProductPayload) => {
+      const product = await authorizedRequest<Product>('/api/products', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
       setState((prev) => ({
         ...prev,
-        products: [...prev.products, next].sort((a, b) =>
+        products: [...prev.products, product].sort((a, b) =>
           a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' }),
         ),
       }));
-    };
+    },
+    [authorizedRequest],
+  );
 
-    const updateProduct = (id: string, payload: ProductPayload) => {
+  const updateProduct = useCallback(
+    async (id: string, payload: ProductPayload) => {
+      const updated = await authorizedRequest<Product>(`/api/products/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      });
       setState((prev) => ({
         ...prev,
         products: prev.products
-          .map((product) =>
-            product.id === id ? { ...withTimestamps({ ...product, ...payload }, product) } : product,
-          )
-          .sort((a, b) =>
-            a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' }),
-          ),
+          .map((product) => (product.id === id ? updated : product))
+          .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' })),
       }));
-    };
+    },
+    [authorizedRequest],
+  );
 
-    const removeProduct = (id: string) => {
-      setState((prev) => ({
-        ...prev,
-        products: prev.products.filter((product) => product.id !== id),
-        shipments: prev.shipments.map((shipment) => ({
-          ...shipment,
-          items: shipment.items.filter((item) => item.productId !== id),
-        })),
-      }));
-    };
-
-    const addShipment = (payload: ShipmentPayload) => {
-      const items: ShipmentLine[] = payload.items.map((item) => ({
-        id: generateId(),
-        productId: item.productId,
-        quantitySent: item.quantitySent,
-        quantityReturned: 0,
-      }));
-
-      const shipment: Shipment = withTimestamps({
-        id: generateId(),
-        sentAt: payload.sentAt,
-        expectedReturnAt: payload.expectedReturnAt,
-        notes: payload.notes,
-        items,
+  const removeProduct = useCallback(
+    async (id: string) => {
+      await authorizedRequest<void>(`/api/products/${id}`, {
+        method: 'DELETE',
       });
+      setState((prev) => {
+        const products = prev.products.filter((product) => product.id !== id);
+        const shipments = prev.shipments
+          .map((shipment) => ({
+            ...shipment,
+            items: shipment.items.filter((item) => item.productId !== id),
+          }))
+          .filter((shipment) => shipment.items.length > 0);
+        return { products, shipments };
+      });
+    },
+    [authorizedRequest],
+  );
 
+  const addShipment = useCallback(
+    async (payload: ShipmentPayload) => {
+      const shipment = await authorizedRequest<Shipment>('/api/shipments', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
       setState((prev) => ({
         ...prev,
         shipments: [shipment, ...prev.shipments].sort((a, b) =>
           b.sentAt.localeCompare(a.sentAt),
         ),
       }));
-    };
+    },
+    [authorizedRequest],
+  );
 
-    const updateShipmentReturn = (
-      shipmentId: string,
-      lineId: string,
-      quantityReturned: number,
-    ) => {
+  const updateShipmentReturn = useCallback(
+    async (shipmentId: string, lineId: string, quantityReturned: number) => {
+      const shipment = await authorizedRequest<Shipment>(`/api/shipments/${shipmentId}/returns`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          updates: [{ lineId, quantityReturned }],
+        }),
+      });
       setState((prev) => ({
         ...prev,
-        shipments: prev.shipments.map((shipment) => {
-          if (shipment.id !== shipmentId) {
-            return shipment;
-          }
-
-          const updatedItems = shipment.items.map((item) =>
-            item.id === lineId
-              ? {
-                  ...item,
-                  quantityReturned: Math.min(
-                    Math.max(quantityReturned, 0),
-                    item.quantitySent,
-                  ),
-                }
-              : item,
-          );
-
-          return {
-            ...withTimestamps({ ...shipment, items: updatedItems }, shipment),
-          };
-        }),
+        shipments: prev.shipments.map((item) => (item.id === shipment.id ? shipment : item)),
       }));
-    };
+    },
+    [authorizedRequest],
+  );
 
-    const removeShipment = (shipmentId: string) => {
+  const removeShipment = useCallback(
+    async (shipmentId: string) => {
+      await authorizedRequest<void>(`/api/shipments/${shipmentId}`, {
+        method: 'DELETE',
+      });
       setState((prev) => ({
         ...prev,
         shipments: prev.shipments.filter((shipment) => shipment.id !== shipmentId),
       }));
-    };
+    },
+    [authorizedRequest],
+  );
 
-    return {
+  const value = useMemo<LaundryContextValue>(
+    () => ({
+      state,
+      loading,
+      error,
+      refresh,
       addProduct,
       updateProduct,
       removeProduct,
       addShipment,
       updateShipmentReturn,
       removeShipment,
-    };
-  }, []);
-
-  const value = useMemo<LaundryContextValue>(
-    () => ({
-      state,
-      ...actions,
     }),
-    [state, actions],
+    [
+      state,
+      loading,
+      error,
+      refresh,
+      addProduct,
+      updateProduct,
+      removeProduct,
+      addShipment,
+      updateShipmentReturn,
+      removeShipment,
+    ],
   );
 
   return <LaundryContext.Provider value={value}>{children}</LaundryContext.Provider>;

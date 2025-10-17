@@ -6,7 +6,7 @@ import {
   listProducts,
   updateProduct,
   getProduct,
-} from '../store';
+} from '../store.js';
 
 const router = Router();
 
@@ -21,48 +21,87 @@ const productSchema = z.object({
   pricePerUnit: z.number().positive('O preço deve ser maior que zero'),
 });
 
-router.get('/', (_req, res) => {
-  res.json(listProducts());
+router.get('/', async (req, res, next) => {
+  try {
+    if (!req.userId) {
+      return res.status(401).json({ message: 'Usuário não autenticado' });
+    }
+    const products = await listProducts(req.userId);
+    res.json(products);
+  } catch (error) {
+    next(error);
+  }
 });
 
-router.get('/:id', (req, res) => {
-  const product = getProduct(req.params.id);
-  if (!product) {
-    return res.status(404).json({ message: 'Produto não encontrado' });
+router.get('/:id', async (req, res, next) => {
+  try {
+    if (!req.userId) {
+      return res.status(401).json({ message: 'Usuário não autenticado' });
+    }
+    const product = await getProduct(req.params.id, req.userId);
+    if (!product) {
+      return res.status(404).json({ message: 'Produto não encontrado' });
+    }
+    return res.json(product);
+  } catch (error) {
+    next(error);
   }
-  return res.json(product);
 });
 
-router.post('/', (req, res) => {
-  const result = productSchema.safeParse(req.body);
-  if (!result.success) {
-    return res.status(400).json({ message: 'Dados inválidos', errors: result.error.flatten() });
-  }
+router.post('/', async (req, res, next) => {
+  try {
+    const result = productSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({ message: 'Dados inválidos', errors: result.error.flatten() });
+    }
 
-  const product = createProduct(result.data);
-  return res.status(201).json(product);
+    if (!req.userId) {
+      return res.status(401).json({ message: 'Usuário não autenticado' });
+    }
+
+    const product = await createProduct(req.userId, result.data);
+    return res.status(201).json(product);
+  } catch (error) {
+    next(error);
+  }
 });
 
-router.put('/:id', (req, res) => {
-  const result = productSchema.safeParse(req.body);
-  if (!result.success) {
-    return res.status(400).json({ message: 'Dados inválidos', errors: result.error.flatten() });
-  }
+router.put('/:id', async (req, res, next) => {
+  try {
+    const result = productSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({ message: 'Dados inválidos', errors: result.error.flatten() });
+    }
 
-  const product = updateProduct(req.params.id, result.data);
-  if (!product) {
-    return res.status(404).json({ message: 'Produto não encontrado' });
-  }
+    if (!req.userId) {
+      return res.status(401).json({ message: 'Usuário não autenticado' });
+    }
 
-  return res.json(product);
+    const product = await updateProduct(req.params.id, req.userId, result.data);
+    if (!product) {
+      return res.status(404).json({ message: 'Produto não encontrado' });
+    }
+
+    return res.json(product);
+  } catch (error) {
+    next(error);
+  }
 });
 
-router.delete('/:id', (req, res) => {
-  const removed = deleteProduct(req.params.id);
-  if (!removed) {
-    return res.status(404).json({ message: 'Produto não encontrado' });
+router.delete('/:id', async (req, res, next) => {
+  try {
+    if (!req.userId) {
+      return res.status(401).json({ message: 'Usuário não autenticado' });
+    }
+
+    const removed = await deleteProduct(req.params.id, req.userId);
+    if (!removed) {
+      return res.status(404).json({ message: 'Produto não encontrado' });
+    }
+    return res.status(204).send();
+  } catch (error) {
+    next(error);
   }
-  return res.status(204).send();
 });
 
 export default router;

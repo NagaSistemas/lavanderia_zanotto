@@ -6,6 +6,7 @@ export type ProductInput = {
 
 export type Product = ProductInput & {
   id: string;
+  ownerId: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -32,6 +33,7 @@ export type ShipmentItem = {
 
 export type Shipment = {
   id: string;
+  ownerId: string;
   sentAt: string;
   expectedReturnAt?: string;
   notes?: string;

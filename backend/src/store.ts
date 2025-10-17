@@ -1,91 +1,175 @@
-import {
-  type Product,
-  type ProductInput,
-  type Shipment,
-  type ShipmentInput,
-  type ShipmentReturnUpdate,
-  type ShipmentItem,
-} from './types';
-import { generateId } from './utils/id';
+import type {
+  Product,
+  ProductInput,
+  Shipment,
+  ShipmentInput,
+  ShipmentItem,
+  ShipmentReturnUpdate,
+} from './types.js';
+import type { DocumentSnapshot } from 'firebase-admin/firestore';
+import { firestore } from './firebase.js';
+import { generateId } from './utils/id.js';
 
-type State = {
-  products: Map<string, Product>;
-  shipments: Map<string, Shipment>;
+const productsCollection = firestore.collection('products');
+const shipmentsCollection = firestore.collection('shipments');
+
+type ShipmentRecord = Shipment & {
+  itemProductIds?: string[];
 };
 
-const state: State = {
-  products: new Map(),
-  shipments: new Map(),
+const mapProductDoc = (doc: DocumentSnapshot): Product => {
+  const data = doc.data() as Product | undefined;
+  if (!data) {
+    throw new Error(`Produto ${doc.id} está sem dados no Firestore.`);
+  }
+
+  return {
+    ...data,
+    id: doc.id,
+  };
 };
 
-export const listProducts = (): Product[] =>
-  Array.from(state.products.values()).sort((a, b) =>
-    a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' }),
-  );
+const mapShipmentDoc = (doc: DocumentSnapshot): Shipment => {
+  const data = doc.data() as ShipmentRecord | undefined;
+  if (!data) {
+    throw new Error(`Envio ${doc.id} está sem dados no Firestore.`);
+  }
 
-export const getProduct = (id: string): Product | undefined => state.products.get(id);
+  return {
+    ...data,
+    id: doc.id,
+    items: data.items ?? [],
+  };
+};
 
-export const createProduct = (input: ProductInput): Product => {
+const ensureOwnership = <T extends { ownerId: string }>(data: T, ownerId: string): T | null =>
+  data.ownerId === ownerId ? data : null;
+
+export const listProducts = async (ownerId: string): Promise<Product[]> => {
+  const snapshot = await productsCollection.where('ownerId', '==', ownerId).orderBy('name', 'asc').get();
+  return snapshot.docs.map(mapProductDoc);
+};
+
+export const getProduct = async (id: string, ownerId: string): Promise<Product | null> => {
+  const doc = await productsCollection.doc(id).get();
+  if (!doc.exists) {
+    return null;
+  }
+
+  const product = mapProductDoc(doc);
+  return ensureOwnership(product, ownerId);
+};
+
+export const createProduct = async (ownerId: string, input: ProductInput): Promise<Product> => {
   const now = new Date().toISOString();
+  const docRef = productsCollection.doc();
   const product: Product = {
-    id: generateId(),
+    id: docRef.id,
+    ownerId,
     ...input,
     createdAt: now,
     updatedAt: now,
   };
 
-  state.products.set(product.id, product);
+  await docRef.set(product);
   return product;
 };
 
-export const updateProduct = (id: string, input: ProductInput): Product | null => {
-  const existing = state.products.get(id);
-  if (!existing) {
+export const updateProduct = async (
+  id: string,
+  ownerId: string,
+  input: ProductInput,
+): Promise<Product | null> => {
+  const docRef = productsCollection.doc(id);
+  const existing = await docRef.get();
+  if (!existing.exists) {
+    return null;
+  }
+
+  const current = mapProductDoc(existing);
+  if (current.ownerId !== ownerId) {
     return null;
   }
 
   const updated: Product = {
-    ...existing,
+    ...current,
     ...input,
     updatedAt: new Date().toISOString(),
   };
 
-  state.products.set(id, updated);
+  await docRef.set(updated);
   return updated;
 };
 
-export const deleteProduct = (id: string): boolean => {
-  const removed = state.products.delete(id);
-  if (!removed) {
+export const deleteProduct = async (id: string, ownerId: string): Promise<boolean> => {
+  const docRef = productsCollection.doc(id);
+  const snapshot = await docRef.get();
+  if (!snapshot.exists) {
     return false;
   }
 
-  // Clean product references from shipments
-  state.shipments.forEach((shipment) => {
-    const filteredItems = shipment.items.filter((item) => item.productId !== id);
-    if (filteredItems.length !== shipment.items.length) {
+  const current = mapProductDoc(snapshot);
+  if (current.ownerId !== ownerId) {
+    return false;
+  }
+
+  await docRef.delete();
+
+  const shipmentsSnapshot = await shipmentsCollection
+    .where('ownerId', '==', ownerId)
+    .where('itemProductIds', 'array-contains', id)
+    .get();
+
+  if (!shipmentsSnapshot.empty) {
+    const batch = firestore.batch();
+    const updatedAt = new Date().toISOString();
+
+    shipmentsSnapshot.forEach((shipmentDoc) => {
+      const data = shipmentDoc.data() as ShipmentRecord;
+      const filteredItems = (data.items ?? []).filter((item) => item.productId !== id);
+
       if (filteredItems.length === 0) {
-        state.shipments.delete(shipment.id);
+        batch.delete(shipmentDoc.ref);
       } else {
-        const updatedShipment: Shipment = {
-          ...shipment,
+        batch.update(shipmentDoc.ref, {
           items: filteredItems,
-          updatedAt: new Date().toISOString(),
-        };
-        state.shipments.set(shipment.id, updatedShipment);
+          itemProductIds: filteredItems.map((item) => item.productId),
+          updatedAt,
+        });
       }
-    }
-  });
+    });
+
+    await batch.commit();
+  }
 
   return true;
 };
 
-export const listShipments = (): Shipment[] =>
-  Array.from(state.shipments.values()).sort((a, b) => b.sentAt.localeCompare(a.sentAt));
+export const listShipments = async (ownerId: string): Promise<Shipment[]> => {
+  const snapshot = await shipmentsCollection
+    .where('ownerId', '==', ownerId)
+    .orderBy('sentAt', 'desc')
+    .get();
+  return snapshot.docs.map(mapShipmentDoc);
+};
 
-export const getShipment = (id: string): Shipment | undefined => state.shipments.get(id);
+export const getShipment = async (id: string, ownerId: string): Promise<Shipment | null> => {
+  const doc = await shipmentsCollection.doc(id).get();
+  if (!doc.exists) {
+    return null;
+  }
 
-export const createShipment = (input: ShipmentInput): Shipment => {
+  const shipment = mapShipmentDoc(doc);
+  return ensureOwnership(shipment, ownerId);
+};
+
+export const createShipment = async (
+  ownerId: string,
+  input: ShipmentInput,
+): Promise<Shipment> => {
+  const docRef = shipmentsCollection.doc();
+  const now = new Date().toISOString();
+
   const items: ShipmentItem[] = input.items.map((item) => ({
     id: generateId(),
     productId: item.productId,
@@ -93,103 +177,115 @@ export const createShipment = (input: ShipmentInput): Shipment => {
     quantityReturned: Math.min(Math.max(item.quantityReturned ?? 0, 0), item.quantitySent),
   }));
 
-  const now = new Date().toISOString();
-
-  const shipment: Shipment = {
-    id: generateId(),
+  const shipmentRecord: ShipmentRecord = {
+    id: docRef.id,
+    ownerId,
     sentAt: input.sentAt,
     expectedReturnAt: input.expectedReturnAt,
     notes: input.notes,
     items,
+    itemProductIds: items.map((item) => item.productId),
     createdAt: now,
     updatedAt: now,
   };
 
-  state.shipments.set(shipment.id, shipment);
-  return shipment;
+  await docRef.set(shipmentRecord);
+  return {
+    id: shipmentRecord.id,
+    ownerId,
+    sentAt: shipmentRecord.sentAt,
+    expectedReturnAt: shipmentRecord.expectedReturnAt,
+    notes: shipmentRecord.notes,
+    items,
+    createdAt: shipmentRecord.createdAt,
+    updatedAt: shipmentRecord.updatedAt,
+  };
 };
 
-export const updateShipmentMeta = (
+export const updateShipmentMeta = async (
   id: string,
+  ownerId: string,
   input: Partial<Omit<ShipmentInput, 'items'>>,
-): Shipment | null => {
-  const existing = state.shipments.get(id);
-  if (!existing) {
+): Promise<Shipment | null> => {
+  const docRef = shipmentsCollection.doc(id);
+  const snapshot = await docRef.get();
+  if (!snapshot.exists) {
     return null;
   }
 
-  const updated: Shipment = {
-    ...existing,
+  const current = mapShipmentDoc(snapshot);
+  if (current.ownerId !== ownerId) {
+    return null;
+  }
+
+  const updated: ShipmentRecord = {
+    ...current,
     ...input,
+    itemProductIds: current.items.map((item) => item.productId),
     updatedAt: new Date().toISOString(),
   };
 
-  state.shipments.set(id, updated);
-  return updated;
+  await docRef.set(updated);
+  return mapShipmentDoc(await docRef.get());
 };
 
-export const updateShipmentReturns = (
+export const updateShipmentReturns = async (
   id: string,
+  ownerId: string,
   updates: ShipmentReturnUpdate[],
-): Shipment | null => {
-  const existing = state.shipments.get(id);
-  if (!existing) {
+): Promise<Shipment | null> => {
+  const docRef = shipmentsCollection.doc(id);
+  const snapshot = await docRef.get();
+  if (!snapshot.exists) {
+    return null;
+  }
+
+  const current = mapShipmentDoc(snapshot);
+  if (current.ownerId !== ownerId) {
     return null;
   }
 
   const updateMap = new Map(updates.map((item) => [item.lineId, item.quantityReturned]));
 
-  const items = existing.items.map((item) => {
+  const items = current.items.map((item) => {
     if (!updateMap.has(item.id)) {
       return item;
     }
+
     const quantityReturned = Math.min(
       Math.max(updateMap.get(item.id) ?? 0, 0),
       item.quantitySent,
     );
+
     return {
       ...item,
       quantityReturned,
     };
   });
 
-  const updated: Shipment = {
-    ...existing,
+  const updated: ShipmentRecord = {
+    ...current,
     items,
+    itemProductIds: items.map((item) => item.productId),
     updatedAt: new Date().toISOString(),
   };
 
-  state.shipments.set(id, updated);
-  return updated;
+  await docRef.set(updated);
+  return mapShipmentDoc(await docRef.get());
 };
 
-export const deleteShipment = (id: string): boolean => state.shipments.delete(id);
-
-const ensureSeedData = () => {
-  if (state.products.size > 0 || state.shipments.size > 0) {
-    return;
+export const deleteShipment = async (id: string, ownerId: string): Promise<boolean> => {
+  const docRef = shipmentsCollection.doc(id);
+  const snapshot = await docRef.get();
+  if (!snapshot.exists) {
+    return false;
   }
 
-  const towel = createProduct({
-    name: 'Toalha de banho',
-    category: 'Enxoval',
-    pricePerUnit: 4.5,
-  });
-  const sheet = createProduct({
-    name: 'Lençol casal',
-    category: 'Roupa de cama',
-    pricePerUnit: 7.9,
-  });
+  const current = mapShipmentDoc(snapshot);
+  if (current.ownerId !== ownerId) {
+    return false;
+  }
 
-  createShipment({
-    sentAt: new Date().toISOString().slice(0, 10),
-    expectedReturnAt: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
-    notes: 'Lote inicial automatizado',
-    items: [
-      { productId: towel.id, quantitySent: 50 },
-      { productId: sheet.id, quantitySent: 30 },
-    ],
-  });
+  await docRef.delete();
+  return true;
 };
-
-ensureSeedData();

@@ -25,10 +25,14 @@ export const ProductsSection = () => {
   const [formState, setFormState] = useState<FormState>(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [removingId, setRemovingId] = useState<string | null>(null);
 
-  const orderedProducts = useMemo<Product[]>(() => products, [products]);
+  const orderedProducts = useMemo<Product[]>(() => {
+    return [...products].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+  }, [products]);
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const price = Number.parseFloat(formState.price.replace(',', '.'));
 
@@ -38,7 +42,7 @@ export const ProductsSection = () => {
     }
 
     if (Number.isNaN(price) || price <= 0) {
-      setError('Defina um preço válido maior que zero.');
+      setError('Defina um preco valido maior que zero.');
       return;
     }
 
@@ -48,15 +52,23 @@ export const ProductsSection = () => {
       pricePerUnit: price,
     };
 
-    if (editingId) {
-      updateProduct(editingId, payload);
-    } else {
-      addProduct(payload);
-    }
-
-    setFormState(emptyForm);
-    setEditingId(null);
+    setIsSubmitting(true);
     setError(null);
+    try {
+      if (editingId) {
+        await updateProduct(editingId, payload);
+      } else {
+        await addProduct(payload);
+      }
+      setFormState(emptyForm);
+      setEditingId(null);
+    } catch (submitError) {
+      setError(
+        submitError instanceof Error ? submitError.message : 'Falha ao salvar produto.',
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleEdit = (product: Product) => {
@@ -66,12 +78,27 @@ export const ProductsSection = () => {
       category: product.category ?? '',
       price: product.pricePerUnit.toString().replace('.', ','),
     });
+    setError(null);
   };
 
   const handleCancelEdit = () => {
     setEditingId(null);
     setFormState(emptyForm);
     setError(null);
+  };
+
+  const handleRemove = async (id: string) => {
+    setRemovingId(id);
+    setError(null);
+    try {
+      await removeProduct(id);
+    } catch (removeError) {
+      setError(
+        removeError instanceof Error ? removeError.message : 'Falha ao remover produto.',
+      );
+    } finally {
+      setRemovingId(null);
+    }
   };
 
   return (
@@ -82,8 +109,8 @@ export const ProductsSection = () => {
             Cadastro de Produtos
           </h2>
           <p className="text-sm text-slate-600">
-            Defina os itens enviados para a lavanderia e o valor por peça. Essas informações
-            alimentam os cálculos de custo por lote e os relatórios financeiros.
+            Defina os itens enviados para a lavanderia e o valor por peca. Essas informacoes
+            alimentam os calculos de custo por lote e os relatorios financeiros.
           </p>
         </header>
 
@@ -113,7 +140,7 @@ export const ProductsSection = () => {
               name="category"
               type="text"
               className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
-              placeholder="Roupa de cama, decoração..."
+              placeholder="Roupa de cama, decoracao..."
               value={formState.category}
               onChange={(event) =>
                 setFormState((prev) => ({ ...prev, category: event.target.value }))
@@ -124,7 +151,7 @@ export const ProductsSection = () => {
           <div className="flex flex-col gap-1 md:col-span-2 md:flex-row md:items-end md:gap-4">
             <div className="flex flex-1 flex-col gap-1">
               <label htmlFor="product-price" className="text-sm font-medium text-slate-700">
-                Preço por lavagem (R$)
+                Preco por lavagem (R$)
               </label>
               <input
                 id="product-price"
@@ -147,9 +174,10 @@ export const ProductsSection = () => {
             <div className="flex gap-2">
               <button
                 type="submit"
-                className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+                disabled={isSubmitting}
+                className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 disabled:opacity-60"
               >
-                {editingId ? 'Atualizar' : 'Adicionar'}
+                {isSubmitting ? 'Salvando...' : editingId ? 'Atualizar' : 'Adicionar'}
               </button>
               {editingId ? (
                 <button
@@ -177,10 +205,10 @@ export const ProductsSection = () => {
                   Categoria
                 </th>
                 <th scope="col" className="px-4 py-3 text-right">
-                  Preço por lavagem
+                  Preco por lavagem
                 </th>
                 <th scope="col" className="px-4 py-3 text-right">
-                  Ações
+                  Acoes
                 </th>
               </tr>
             </thead>
@@ -196,7 +224,7 @@ export const ProductsSection = () => {
                   <tr key={product.id} className="transition hover:bg-slate-50">
                     <td className="px-4 py-3 font-medium text-slate-900">{product.name}</td>
                     <td className="px-4 py-3 text-slate-600">
-                      {product.category ?? <span className="text-slate-400">—</span>}
+                      {product.category ?? <span className="text-slate-400">-</span>}
                     </td>
                     <td className="px-4 py-3 text-right text-slate-900">
                       {formatCurrency(product.pricePerUnit)}
@@ -212,10 +240,11 @@ export const ProductsSection = () => {
                         </button>
                         <button
                           type="button"
-                          onClick={() => removeProduct(product.id)}
-                          className="rounded-md border border-red-200 px-3 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50"
+                          onClick={() => handleRemove(product.id)}
+                          disabled={removingId === product.id}
+                          className="rounded-md border border-red-200 px-3 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-60"
                         >
-                          Remover
+                          {removingId === product.id ? 'Removendo...' : 'Remover'}
                         </button>
                       </div>
                     </td>

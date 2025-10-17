@@ -1,53 +1,97 @@
-# Lavanderia Control — Monorepo
+# Lavanderia Control - Monorepo
 
-Este repositório mantém o PWA de controle de lavanderia e uma API Node/Express separadas em pastas distintas.
+Aplicacao composta por dois projetos independentes:
 
 ```
 .
-├── frontend/   # Aplicação React + Vite (PWA)
-└── backend/    # API Express com armazenamento em memória
+|- frontend/   # PWA em React + Vite com Firebase Auth
+|- backend/    # API Express integrada ao Firebase (Firestore + Auth Admin)
 ```
 
 ## Requisitos
 
-- Node.js 20+
-- npm 10+
+- Node.js 20 ou superior
+- npm 10 ou superior
 
-## Como rodar
-
-### Frontend (PWA)
+## Frontend (PWA)
 
 ```bash
 cd frontend
 npm install
 npm run dev        # http://localhost:5173
-npm run build      # gera dist/ com assets do PWA
-npm run preview    # testa build localmente
+npm run build      # gera dist/ para deploy
+npm run preview    # testa a versao empacotada
 ```
 
-### Backend (API Express)
+Configure um arquivo `.env` (ou variaveis na hospedagem) com:
+
+```
+VITE_API_BASE_URL=https://lavanderiazanotto-production.up.railway.app
+VITE_FIREBASE_API_KEY=...
+VITE_FIREBASE_AUTH_DOMAIN=...
+VITE_FIREBASE_PROJECT_ID=...
+VITE_FIREBASE_STORAGE_BUCKET=...
+VITE_FIREBASE_MESSAGING_SENDER_ID=...
+VITE_FIREBASE_APP_ID=...
+# Opcional
+VITE_FIREBASE_MEASUREMENT_ID=...
+```
+
+O PWA utiliza Firebase Auth (email/senha) e consome a API protegida via token JWT emitido pelo Firebase.
+
+## Backend (API Express + Firebase Admin)
 
 ```bash
 cd backend
 npm install
 npm run dev        # http://localhost:3333
-npm run build      # output em dist/
-npm start          # executa versão compilada
+npm run build      # compila para dist/
+npm start          # executa a versao compilada
 ```
 
-A API expõe:
+Variaveis de ambiente obrigatorias:
 
-- `GET /health` — status do serviço
+- `FIREBASE_PROJECT_ID`
+- `FIREBASE_CLIENT_EMAIL`
+- `FIREBASE_PRIVATE_KEY` (manter quebras de linha ou converter `\n` em quebras reais)
+- `PORT` (opcional - Railway atribui automaticamente)
+
+Rotas disponiveis:
+
+- `GET /health` - status basico do servico
 - `GET/POST/PUT/DELETE /api/products`
 - `GET/POST/PATCH/DELETE /api/shipments`
-- `PATCH /api/shipments/:id/returns` para atualizar retornos de itens
+- `PATCH /api/shipments/:id/returns` - atualiza o retorno das pecas enviadas
+
+Todas as rotas sob `/api` exigem cabecalho `Authorization: Bearer <ID_TOKEN>` obtido via Firebase Auth. Cada documento no Firestore recebe o campo `ownerId` (UID), garantindo isolamento por usuario.
+
+## Regras sugeridas para o Firestore
+
+Publique regras semelhantes no console do Firestore (ajuste nomes de colecao se necessario):
+
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /products/{productId} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.ownerId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.ownerId;
+    }
+
+    match /shipments/{shipmentId} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.ownerId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.ownerId;
+    }
+  }
+}
+```
 
 ## Scripts auxiliares
 
-- `npm run lint` (em cada projeto) executa ESLint focado em TypeScript.
+- `npm run lint` (frontend e backend) executa ESLint com regras para TypeScript.
 
-## Próximos passos sugeridos
+## Proximos passos recomendados
 
-1. Substituir o armazenamento em memória por banco de dados (PostgreSQL, MongoDB etc.).
-2. Implementar autenticação e controle de acesso na API.
-3. Integrar o frontend à API usando uma camada de serviços dedicada (ex.: React Query).
+1. Configurar pipelines de deploy continuo (CI/CD) para Railway e Hostinger.
+2. Adicionar testes automatizados (unitarios e de integracao) no backend e frontend.
+3. Estender o dashboard com graficos e filtros adicionais (por unidade, cliente, SLA, etc.).

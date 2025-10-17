@@ -10,7 +10,7 @@ type FormLine = {
   quantitySent: string;
 };
 
-const newLine = (): FormLine => ({
+const createFormLine = (): FormLine => ({
   id: `line-${Math.random().toString(36).slice(2)}`,
   productId: '',
   quantitySent: '',
@@ -29,8 +29,11 @@ export const ShipmentsSection = () => {
   const [sentAt, setSentAt] = useState<string>(getToday());
   const [expectedReturnAt, setExpectedReturnAt] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
-  const [lines, setLines] = useState<FormLine[]>([newLine()]);
+  const [lines, setLines] = useState<FormLine[]>([createFormLine()]);
   const [formError, setFormError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+  const [updatingReturnId, setUpdatingReturnId] = useState<string | null>(null);
 
   const hasProducts = products.length > 0;
 
@@ -63,11 +66,11 @@ export const ShipmentsSection = () => {
     setSentAt(getToday());
     setExpectedReturnAt('');
     setNotes('');
-    setLines([newLine()]);
+    setLines([createFormLine()]);
     setFormError(null);
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!hasProducts) {
       setFormError('Cadastre pelo menos um produto antes de registrar envios.');
@@ -79,10 +82,15 @@ export const ShipmentsSection = () => {
         productId: line.productId,
         quantitySent: Number.parseInt(line.quantitySent, 10),
       }))
-      .filter((item) => item.productId && Number.isFinite(item.quantitySent) && item.quantitySent > 0);
+      .filter(
+        (item) =>
+          item.productId &&
+          Number.isFinite(item.quantitySent) &&
+          item.quantitySent > 0,
+      );
 
     if (items.length === 0) {
-      setFormError('Adicione pelo menos um item com quantidade válida.');
+      setFormError('Adicione pelo menos um item com quantidade valida.');
       return;
     }
 
@@ -93,8 +101,44 @@ export const ShipmentsSection = () => {
       items,
     };
 
-    addShipment(payload);
-    resetForm();
+    setIsSubmitting(true);
+    setFormError(null);
+    try {
+      await addShipment(payload);
+      resetForm();
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'Falha ao registrar envio.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleReturnChange = async (shipmentId: string, lineId: string, value: string) => {
+    const quantity = Number.parseInt(value || '0', 10);
+    if (Number.isNaN(quantity) || quantity < 0) {
+      return;
+    }
+
+    setUpdatingReturnId(lineId);
+    try {
+      await updateShipmentReturn(shipmentId, lineId, quantity);
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'Falha ao atualizar retorno.');
+    } finally {
+      setUpdatingReturnId(null);
+    }
+  };
+
+  const handleRemoveShipment = async (shipmentId: string) => {
+    setRemovingId(shipmentId);
+    setFormError(null);
+    try {
+      await removeShipment(shipmentId);
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'Falha ao remover envio.');
+    } finally {
+      setRemovingId(null);
+    }
   };
 
   return (
@@ -105,8 +149,7 @@ export const ShipmentsSection = () => {
             Controle de Envios
           </h2>
           <p className="text-sm text-slate-600">
-            Registre cada lote enviado para a lavanderia. Ao registrar o retorno, você acompanha
-            itens faltantes e o custo por envio.
+            Registre cada lote enviado para a lavanderia e acompanhe retornos, itens faltantes e custo.
           </p>
         </header>
 
@@ -127,7 +170,7 @@ export const ShipmentsSection = () => {
             </div>
             <div className="flex flex-col gap-1">
               <label htmlFor="expected-return" className="text-sm font-medium text-slate-700">
-                Previsão de retorno
+                Previsao de retorno
               </label>
               <input
                 id="expected-return"
@@ -139,7 +182,7 @@ export const ShipmentsSection = () => {
             </div>
             <div className="flex flex-col gap-1">
               <label htmlFor="notes" className="text-sm font-medium text-slate-700">
-                Observações
+                Observacoes
               </label>
               <input
                 id="notes"
@@ -190,22 +233,24 @@ export const ShipmentsSection = () => {
                         inputMode="numeric"
                         value={line.quantitySent}
                         onChange={(event) =>
-                          handleLineChange(line.id, 'quantitySent', event.target.value.replace(/\D/g, ''))
+                          handleLineChange(
+                            line.id,
+                            'quantitySent',
+                            event.target.value.replace(/[^0-9]/g, ''),
+                          )
                         }
                         className="w-24 rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
                         required
                       />
                     </div>
-                    <div className="flex flex-col gap-1">
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveLine(line.id)}
-                        className="mt-5 inline-flex items-center justify-center rounded-md border border-red-200 px-2 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50"
-                        disabled={lines.length === 1}
-                      >
-                        Remover
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveLine(line.id)}
+                      className="mt-5 inline-flex items-center justify-center rounded-md border border-red-200 px-2 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                      disabled={lines.length === 1}
+                    >
+                      Remover
+                    </button>
                   </div>
                 </div>
               ))}
@@ -213,7 +258,7 @@ export const ShipmentsSection = () => {
 
             <button
               type="button"
-              onClick={() => setLines((prev) => [...prev, newLine()])}
+              onClick={() => setLines((prev) => [...prev, createFormLine()])}
               className="inline-flex w-fit items-center justify-center rounded-lg border border-dashed border-primary/40 px-4 py-2 text-sm font-semibold text-primary transition hover:border-primary hover:bg-primary/5"
             >
               Adicionar item
@@ -227,9 +272,10 @@ export const ShipmentsSection = () => {
             </span>
             <button
               type="submit"
-              className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+              disabled={isSubmitting}
+              className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 disabled:opacity-60"
             >
-              Registrar envio
+              {isSubmitting ? 'Registrando...' : 'Registrar envio'}
             </button>
           </div>
 
@@ -238,17 +284,18 @@ export const ShipmentsSection = () => {
 
         <div className="flex flex-col gap-4">
           <header className="flex items-center justify-between">
-            <h3 className="text-base font-semibold text-slate-900">Histórico de envios</h3>
+            <h3 className="text-base font-semibold text-slate-900">Historico de envios</h3>
             {shipmentDetails.length > 0 ? (
               <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                {shipmentDetails.length} {shipmentDetails.length === 1 ? 'registro' : 'registros'}
+                {shipmentDetails.length}{' '}
+                {shipmentDetails.length === 1 ? 'registro' : 'registros'}
               </span>
             ) : null}
           </header>
 
           {shipmentDetails.length === 0 ? (
             <p className="text-sm text-slate-500">
-              Nenhum envio registrado até agora. Utilize o formulário acima para começar.
+              Nenhum envio registrado ate agora. Utilize o formulario acima para comecar.
             </p>
           ) : (
             <div className="flex flex-col gap-4">
@@ -275,10 +322,11 @@ export const ShipmentsSection = () => {
                     </div>
                     <button
                       type="button"
-                      onClick={() => removeShipment(shipment.id)}
-                      className="self-start rounded-md border border-red-200 px-3 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50"
+                      onClick={() => handleRemoveShipment(shipment.id)}
+                      disabled={removingId === shipment.id}
+                      className="self-start rounded-md border border-red-200 px-3 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-60"
                     >
-                      Apagar registro
+                      {removingId === shipment.id ? 'Removendo...' : 'Apagar registro'}
                     </button>
                   </header>
 
@@ -307,8 +355,12 @@ export const ShipmentsSection = () => {
                           const lineCost = item.quantitySent * price;
                           return (
                             <tr key={item.id} className="transition hover:bg-slate-50">
-                              <td className="px-3 py-2 text-slate-900">{product?.name ?? 'Produto removido'}</td>
-                              <td className="px-3 py-2 text-right text-slate-600">{item.quantitySent}</td>
+                              <td className="px-3 py-2 text-slate-900">
+                                {product?.name ?? 'Produto removido'}
+                              </td>
+                              <td className="px-3 py-2 text-right text-slate-600">
+                                {item.quantitySent}
+                              </td>
                               <td className="px-3 py-2 text-right">
                                 <input
                                   type="number"
@@ -316,16 +368,21 @@ export const ShipmentsSection = () => {
                                   max={item.quantitySent}
                                   value={item.quantityReturned}
                                   onChange={(event) =>
-                                    updateShipmentReturn(
+                                    handleReturnChange(
                                       shipment.id,
                                       item.id,
-                                      Number.parseInt(event.target.value || '0', 10),
+                                      event.target.value,
                                     )
                                   }
                                   className="w-24 rounded-lg border border-slate-200 px-2 py-1 text-right text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
                                 />
+                                {updatingReturnId === item.id ? (
+                                  <span className="ml-2 text-xs text-slate-500">Salvando...</span>
+                                ) : null}
                               </td>
-                              <td className="px-3 py-2 text-right text-slate-900">{formatCurrency(lineCost)}</td>
+                              <td className="px-3 py-2 text-right text-slate-900">
+                                {formatCurrency(lineCost)}
+                              </td>
                             </tr>
                           );
                         })}
@@ -336,15 +393,15 @@ export const ShipmentsSection = () => {
                   <footer className="mt-3 grid gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600 md:grid-cols-4">
                     <span>
                       Total enviado:{' '}
-                      <strong className="text-slate-900">{shipment.totalSent} peças</strong>
+                      <strong className="text-slate-900">{shipment.totalSent} pecas</strong>
                     </span>
                     <span>
                       Retorno:{' '}
-                      <strong className="text-slate-900">{shipment.totalReturned} peças</strong>
+                      <strong className="text-slate-900">{shipment.totalReturned} pecas</strong>
                     </span>
                     <span>
                       Faltantes:{' '}
-                      <strong className="text-red-600">{shipment.totalMissing} peças</strong>
+                      <strong className="text-red-600">{shipment.totalMissing} pecas</strong>
                     </span>
                     <span>
                       Custo do envio:{' '}

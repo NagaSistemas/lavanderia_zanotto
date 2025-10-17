@@ -7,7 +7,7 @@ import {
   listShipments,
   updateShipmentMeta,
   updateShipmentReturns,
-} from '../store';
+} from '../store.js';
 
 const router = Router();
 
@@ -39,9 +39,7 @@ const shipmentSchema = z.object({
     .max(240, 'Máximo de 240 caracteres')
     .optional()
     .transform((value) => (value === '' ? undefined : value)),
-  items: z
-    .array(shipmentItemSchema)
-    .min(1, 'Informe ao menos um item para o envio'),
+  items: z.array(shipmentItemSchema).min(1, 'Informe ao menos um item para o envio'),
 });
 
 const shipmentMetaSchema = shipmentSchema.partial({
@@ -59,62 +57,109 @@ const shipmentReturnSchema = z.object({
     .min(1),
 });
 
-router.get('/', (_req, res) => {
-  res.json(listShipments());
+router.get('/', async (req, res, next) => {
+  try {
+    if (!req.userId) {
+      return res.status(401).json({ message: 'Usuário não autenticado' });
+    }
+    const shipments = await listShipments(req.userId);
+    res.json(shipments);
+  } catch (error) {
+    next(error);
+  }
 });
 
-router.get('/:id', (req, res) => {
-  const shipment = getShipment(req.params.id);
-  if (!shipment) {
-    return res.status(404).json({ message: 'Envio não encontrado' });
+router.get('/:id', async (req, res, next) => {
+  try {
+    if (!req.userId) {
+      return res.status(401).json({ message: 'Usuário não autenticado' });
+    }
+    const shipment = await getShipment(req.params.id, req.userId);
+    if (!shipment) {
+      return res.status(404).json({ message: 'Envio não encontrado' });
+    }
+    return res.json(shipment);
+  } catch (error) {
+    next(error);
   }
-  return res.json(shipment);
 });
 
-router.post('/', (req, res) => {
-  const result = shipmentSchema.safeParse(req.body);
-  if (!result.success) {
-    return res.status(400).json({ message: 'Dados inválidos', errors: result.error.flatten() });
-  }
+router.post('/', async (req, res, next) => {
+  try {
+    const result = shipmentSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({ message: 'Dados inválidos', errors: result.error.flatten() });
+    }
 
-  const shipment = createShipment(result.data);
-  return res.status(201).json(shipment);
+    if (!req.userId) {
+      return res.status(401).json({ message: 'Usuário não autenticado' });
+    }
+
+    const shipment = await createShipment(req.userId, result.data);
+    return res.status(201).json(shipment);
+  } catch (error) {
+    next(error);
+  }
 });
 
-router.patch('/:id', (req, res) => {
-  const result = shipmentMetaSchema.safeParse(req.body);
-  if (!result.success) {
-    return res.status(400).json({ message: 'Dados inválidos', errors: result.error.flatten() });
-  }
+router.patch('/:id', async (req, res, next) => {
+  try {
+    const result = shipmentMetaSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({ message: 'Dados inválidos', errors: result.error.flatten() });
+    }
 
-  const shipment = updateShipmentMeta(req.params.id, result.data);
-  if (!shipment) {
-    return res.status(404).json({ message: 'Envio não encontrado' });
-  }
+    if (!req.userId) {
+      return res.status(401).json({ message: 'Usuário não autenticado' });
+    }
 
-  return res.json(shipment);
+    const shipment = await updateShipmentMeta(req.params.id, req.userId, result.data);
+    if (!shipment) {
+      return res.status(404).json({ message: 'Envio não encontrado' });
+    }
+
+    return res.json(shipment);
+  } catch (error) {
+    next(error);
+  }
 });
 
-router.patch('/:id/returns', (req, res) => {
-  const result = shipmentReturnSchema.safeParse(req.body);
-  if (!result.success) {
-    return res.status(400).json({ message: 'Dados inválidos', errors: result.error.flatten() });
-  }
+router.patch('/:id/returns', async (req, res, next) => {
+  try {
+    const result = shipmentReturnSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({ message: 'Dados inválidos', errors: result.error.flatten() });
+    }
 
-  const shipment = updateShipmentReturns(req.params.id, result.data.updates);
-  if (!shipment) {
-    return res.status(404).json({ message: 'Envio não encontrado' });
-  }
+    if (!req.userId) {
+      return res.status(401).json({ message: 'Usuário não autenticado' });
+    }
 
-  return res.json(shipment);
+    const shipment = await updateShipmentReturns(req.params.id, req.userId, result.data.updates);
+    if (!shipment) {
+      return res.status(404).json({ message: 'Envio não encontrado' });
+    }
+
+    return res.json(shipment);
+  } catch (error) {
+    next(error);
+  }
 });
 
-router.delete('/:id', (req, res) => {
-  const removed = deleteShipment(req.params.id);
-  if (!removed) {
-    return res.status(404).json({ message: 'Envio não encontrado' });
+router.delete('/:id', async (req, res, next) => {
+  try {
+    if (!req.userId) {
+      return res.status(401).json({ message: 'Usuário não autenticado' });
+    }
+
+    const removed = await deleteShipment(req.params.id, req.userId);
+    if (!removed) {
+      return res.status(404).json({ message: 'Envio não encontrado' });
+    }
+    return res.status(204).send();
+  } catch (error) {
+    next(error);
   }
-  return res.status(204).send();
 });
 
 export default router;

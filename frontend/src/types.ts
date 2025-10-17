@@ -3,6 +3,7 @@ export type Product = {
   name: string;
   category?: string;
   pricePerUnit: number;
+  ownerId?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -16,6 +17,7 @@ export type ShipmentLine = {
 
 export type Shipment = {
   id: string;
+  ownerId?: string;
   sentAt: string;
   expectedReturnAt?: string;
   notes?: string;
@@ -38,6 +40,7 @@ export type ProductPayload = {
 export type ShipmentItemPayload = {
   productId: string;
   quantitySent: number;
+  quantityReturned?: number;
 };
 
 export type ShipmentPayload = {
