@@ -24,6 +24,7 @@ export const ShipmentsSection = () => {
     addShipment,
     updateShipmentReturn,
     removeShipment,
+    finalizeShipment,
   } = useLaundry();
 
   const [sentAt, setSentAt] = useState<string>(getToday());
@@ -34,6 +35,7 @@ export const ShipmentsSection = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [updatingReturnId, setUpdatingReturnId] = useState<string | null>(null);
+  const [finalizingId, setFinalizingId] = useState<string | null>(null);
 
   const hasProducts = products.length > 0;
 
@@ -408,14 +410,33 @@ export const ShipmentsSection = () => {
                           </span>
                         ) : null}
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveShipment(shipment.id)}
-                        disabled={removingId === shipment.id}
-                        className="inline-flex items-center justify-center rounded-lg border border-red-200 px-3 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-60"
-                      >
-                        {removingId === shipment.id ? 'Removendo...' : 'Apagar envio'}
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            setFinalizingId(shipment.id);
+                            try {
+                              await finalizeShipment(shipment.id);
+                            } catch (error) {
+                              setFormError(error instanceof Error ? error.message : 'Falha ao registrar envio.');
+                            } finally {
+                              setFinalizingId(null);
+                            }
+                          }}
+                          disabled={finalizingId === shipment.id}
+                          className="inline-flex items-center justify-center rounded-lg bg-primary px-3 py-1 text-xs font-semibold text-white transition hover:bg-primary-dark disabled:opacity-60"
+                        >
+                          {finalizingId === shipment.id ? 'Registrando...' : 'Registrar envio'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveShipment(shipment.id)}
+                          disabled={removingId === shipment.id}
+                          className="inline-flex items-center justify-center rounded-lg border border-red-200 px-3 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-60"
+                        >
+                          {removingId === shipment.id ? 'Removendo...' : 'Apagar envio'}
+                        </button>
+                      </div>
                     </header>
 
                     <div className="mt-4 overflow-hidden rounded-xl border border-slate-100">
@@ -466,9 +487,6 @@ export const ShipmentsSection = () => {
                               <div className="flex-1 min-w-0">
                                 <div className="text-sm font-semibold text-slate-900 truncate">
                                   {product?.name ?? 'Produto removido'}
-                                </div>
-                                <div className="text-xs text-slate-500">
-                                  Enviadas: {item.quantitySent} • Retornadas: {item.quantityReturned}
                                 </div>
                               </div>
                               <div className="ml-3 flex items-center gap-2">

@@ -31,6 +31,7 @@ type LaundryContextValue = {
     quantityReturned: number,
   ) => Promise<void>;
   removeShipment: (shipmentId: string) => Promise<void>;
+  finalizeShipment: (shipmentId: string) => Promise<void>;
 };
 
 const API_BASE_URL =
@@ -222,6 +223,17 @@ export const LaundryProvider = ({ children }: { children: ReactNode }) => {
     [authorizedRequest],
   );
 
+  const finalizeShipment = useCallback(
+    async (shipmentId: string) => {
+      // Remove do histórico local (dados já estão salvos no banco)
+      setState((prev) => ({
+        ...prev,
+        shipments: prev.shipments.filter((shipment) => shipment.id !== shipmentId),
+      }));
+    },
+    [],
+  );
+
   const value = useMemo<LaundryContextValue>(
     () => ({
       state,
@@ -234,6 +246,7 @@ export const LaundryProvider = ({ children }: { children: ReactNode }) => {
       addShipment,
       updateShipmentReturn,
       removeShipment,
+      finalizeShipment,
     }),
     [
       state,
@@ -246,6 +259,7 @@ export const LaundryProvider = ({ children }: { children: ReactNode }) => {
       addShipment,
       updateShipmentReturn,
       removeShipment,
+      finalizeShipment,
     ],
   );
 
