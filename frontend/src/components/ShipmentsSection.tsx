@@ -429,9 +429,6 @@ export const ShipmentsSection = () => {
                               Enviadas
                             </th>
                             <th scope="col" className="px-4 py-2 text-right">
-                              Retorno
-                            </th>
-                            <th scope="col" className="px-4 py-2 text-right">
                               Custo
                             </th>
                           </tr>
@@ -449,55 +446,6 @@ export const ShipmentsSection = () => {
                                 <td className="px-4 py-2 text-right text-slate-600">
                                   {item.quantitySent}
                                 </td>
-                                <td className="px-4 py-2 text-right">
-                                  <div className="flex items-center justify-end gap-1">
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        handleReturnChange(
-                                          shipment.id,
-                                          item.id,
-                                          Math.max(0, item.quantityReturned - 1).toString(),
-                                        )
-                                      }
-                                      disabled={item.quantityReturned <= 0 || updatingReturnId === item.id}
-                                      className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-300 text-slate-600 transition hover:bg-slate-100 disabled:opacity-50"
-                                    >
-                                      −
-                                    </button>
-                                    <input
-                                      type="number"
-                                      min={0}
-                                      max={item.quantitySent}
-                                      value={item.quantityReturned}
-                                      onChange={(event) =>
-                                        handleReturnChange(
-                                          shipment.id,
-                                          item.id,
-                                          event.target.value,
-                                        )
-                                      }
-                                      className="w-12 rounded-lg border border-slate-300 px-2 py-1 text-center text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
-                                    />
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        handleReturnChange(
-                                          shipment.id,
-                                          item.id,
-                                          Math.min(item.quantitySent, item.quantityReturned + 1).toString(),
-                                        )
-                                      }
-                                      disabled={item.quantityReturned >= item.quantitySent || updatingReturnId === item.id}
-                                      className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-300 text-slate-600 transition hover:bg-slate-100 disabled:opacity-50"
-                                    >
-                                      +
-                                    </button>
-                                  </div>
-                                  {updatingReturnId === item.id ? (
-                                    <div className="mt-1 text-xs text-slate-500">Salvando...</div>
-                                  ) : null}
-                                </td>
                                 <td className="px-4 py-2 text-right text-slate-900">
                                   {formatCurrency(lineCost)}
                                 </td>
@@ -506,6 +454,63 @@ export const ShipmentsSection = () => {
                           })}
                         </tbody>
                       </table>
+                    </div>
+
+                    <div className="mt-4 rounded-xl bg-primary/5 p-4">
+                      <h4 className="mb-3 text-sm font-semibold text-slate-700">Controle de retornos</h4>
+                      <div className="space-y-3">
+                        {shipment.items.map((item) => {
+                          const product = products.find((productItem) => productItem.id === item.productId);
+                          return (
+                            <div key={item.id} className="flex items-center justify-between rounded-lg bg-white/80 p-3 shadow-sm">
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm font-semibold text-slate-900 truncate">
+                                  {product?.name ?? 'Produto removido'}
+                                </div>
+                                <div className="text-xs text-slate-500">
+                                  Enviadas: {item.quantitySent} • Retornadas: {item.quantityReturned}
+                                </div>
+                              </div>
+                              <div className="ml-3 flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleReturnChange(
+                                      shipment.id,
+                                      item.id,
+                                      Math.max(0, item.quantityReturned - 1).toString(),
+                                    )
+                                  }
+                                  disabled={item.quantityReturned <= 0 || updatingReturnId === item.id}
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-300 text-slate-600 transition hover:bg-slate-100 disabled:opacity-50"
+                                >
+                                  −
+                                </button>
+                                <div className="w-12 text-center text-sm font-semibold text-slate-900">
+                                  {item.quantityReturned}
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleReturnChange(
+                                      shipment.id,
+                                      item.id,
+                                      Math.min(item.quantitySent, item.quantityReturned + 1).toString(),
+                                    )
+                                  }
+                                  disabled={item.quantityReturned >= item.quantitySent || updatingReturnId === item.id}
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-300 text-slate-600 transition hover:bg-slate-100 disabled:opacity-50"
+                                >
+                                  +
+                                </button>
+                                {updatingReturnId === item.id && (
+                                  <div className="ml-2 text-xs text-slate-500">Salvando...</div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
 
                     <footer className="mt-4 rounded-xl bg-slate-50 p-4">
