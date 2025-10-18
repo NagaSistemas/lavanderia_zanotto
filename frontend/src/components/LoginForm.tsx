@@ -28,14 +28,21 @@ export const LoginForm = () => {
   return (
     <div className="flex min-h-screen items-center justify-center bg-surface px-4 py-8">
       <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-lg ring-1 ring-slate-100">
-        <div className="mb-6 flex flex-col gap-2 text-center">
+        <div className="mb-6 flex flex-col items-center gap-4 text-center">
+          <img 
+            src="/logo.png" 
+            alt="Lavanderia Control Logo" 
+            className="h-24 w-auto object-contain"
+          />
+        <div className="flex flex-col gap-2">
           <span className="inline-flex items-center justify-center rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary">
             Lavanderia Control
           </span>
-          <h1 className="text-xl font-semibold text-slate-900">Acesso restrito</h1>
+
           <p className="text-sm text-slate-600">
             Entre com seu e-mail e senha para gerenciar os envios da lavanderia.
           </p>
+        </div>
         </div>
 
         <form className="flex flex-col gap-4" onSubmit={handleSubmit}>

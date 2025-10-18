@@ -9,10 +9,10 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['robots.txt', 'apple-touch-icon.png', 'icons/icon-192x192.png', 'icons/icon-512x512.png'],
+      includeAssets: ['robots.txt', 'apple-touch-icon.png', 'logo.png'],
       manifest: {
         name: 'Lavanderia Control',
-        short_name: 'Lavanderia',
+        short_name: 'Lavanderia Control',
         description: 'Controle completo da lavanderia com cadastro, envios e dashboard financeiro.',
         theme_color: '#2563eb',
         background_color: '#f8fafc',
@@ -21,13 +21,13 @@ export default defineConfig({
         start_url: './',
         icons: [
           {
-            src: 'icons/icon-192x192.png',
+            src: 'logo.png',
             sizes: '192x192',
             type: 'image/png',
             purpose: 'any maskable',
           },
           {
-            src: 'icons/icon-512x512.png',
+            src: 'logo.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable',
