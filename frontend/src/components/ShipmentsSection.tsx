@@ -510,11 +510,17 @@ export const ShipmentsSection = () => {
                             setFinalizingId(null);
                           }
                         }}
-                        disabled={finalizingId === shipment.id}
+                        disabled={finalizingId === shipment.id || shipment.totalReturned !== shipment.totalSent}
                         className="mt-4 w-full inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-dark disabled:opacity-60"
+                        title={shipment.totalReturned !== shipment.totalSent ? 'Todos os itens devem ser retornados para finalizar' : ''}
                       >
                         {finalizingId === shipment.id ? 'Registrando...' : 'Registrar retorno'}
                       </button>
+                      {shipment.totalReturned !== shipment.totalSent && (
+                        <p className="mt-2 text-xs text-amber-600 text-center">
+                          Ajuste os retornos para igualar o total enviado ({shipment.totalSent} peças)
+                        </p>
+                      )}
                     </div>
 
                     <footer className="mt-4 rounded-xl bg-slate-50 p-4">
