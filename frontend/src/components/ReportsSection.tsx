@@ -157,14 +157,14 @@ export const ReportsSection = () => {
 
           <div className="mt-4 -mx-4 sm:mx-0 sm:overflow-hidden sm:rounded-2xl sm:border sm:border-slate-100">
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-100 text-sm" style={{tableLayout: 'fixed'}}>
-                <colgroup>
-                  <col className="w-20 sm:w-24" />
-                  <col className="w-32 sm:w-auto" />
-                  <col className="w-16 sm:w-20" />
-                  <col className="w-16 sm:w-20" />
-                  <col className="w-16 sm:w-20" />
-                  <col className="w-20 sm:w-28" />
+              <table className="w-full divide-y divide-slate-100 text-sm sm:min-w-full" style={{tableLayout: 'auto'}}>
+                <colgroup className="hidden sm:table-column-group">
+                  <col className="w-24" />
+                  <col className="w-auto" />
+                  <col className="w-20" />
+                  <col className="w-20" />
+                  <col className="w-20" />
+                  <col className="w-28" />
                 </colgroup>
                 <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                   <tr>
