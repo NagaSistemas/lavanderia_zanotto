@@ -450,22 +450,52 @@ export const ShipmentsSection = () => {
                                   {item.quantitySent}
                                 </td>
                                 <td className="px-4 py-2 text-right">
-                                  <input
-                                    type="number"
-                                    min={0}
-                                    max={item.quantitySent}
-                                    value={item.quantityReturned}
-                                    onChange={(event) =>
-                                      handleReturnChange(
-                                        shipment.id,
-                                        item.id,
-                                        event.target.value,
-                                      )
-                                    }
-                                    className="w-24 rounded-lg border border-slate-300 px-2 py-1 text-right text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
-                                  />
+                                  <div className="flex items-center justify-end gap-1">
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleReturnChange(
+                                          shipment.id,
+                                          item.id,
+                                          Math.max(0, item.quantityReturned - 1).toString(),
+                                        )
+                                      }
+                                      disabled={item.quantityReturned <= 0 || updatingReturnId === item.id}
+                                      className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-300 text-slate-600 transition hover:bg-slate-100 disabled:opacity-50"
+                                    >
+                                      −
+                                    </button>
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      max={item.quantitySent}
+                                      value={item.quantityReturned}
+                                      onChange={(event) =>
+                                        handleReturnChange(
+                                          shipment.id,
+                                          item.id,
+                                          event.target.value,
+                                        )
+                                      }
+                                      className="w-12 rounded-lg border border-slate-300 px-2 py-1 text-center text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleReturnChange(
+                                          shipment.id,
+                                          item.id,
+                                          Math.min(item.quantitySent, item.quantityReturned + 1).toString(),
+                                        )
+                                      }
+                                      disabled={item.quantityReturned >= item.quantitySent || updatingReturnId === item.id}
+                                      className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-300 text-slate-600 transition hover:bg-slate-100 disabled:opacity-50"
+                                    >
+                                      +
+                                    </button>
+                                  </div>
                                   {updatingReturnId === item.id ? (
-                                    <span className="ml-2 text-xs text-slate-500">Salvando...</span>
+                                    <div className="mt-1 text-xs text-slate-500">Salvando...</div>
                                   ) : null}
                                 </td>
                                 <td className="px-4 py-2 text-right text-slate-900">
@@ -478,25 +508,57 @@ export const ShipmentsSection = () => {
                       </table>
                     </div>
 
-                    <footer className="mt-4 grid gap-2 rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600 md:grid-cols-2 xl:grid-cols-4">
-                      <span>
-                        Total enviado:{' '}
-                        <strong className="text-slate-900">{shipment.totalSent} pecas</strong>
-                      </span>
-                      <span>
-                        Retorno:{' '}
-                        <strong className="text-slate-900">{shipment.totalReturned} pecas</strong>
-                      </span>
-                      <span>
-                        Faltantes:{' '}
-                        <strong className={shipment.totalMissing > 0 ? 'text-amber-600' : 'text-slate-900'}>
-                          {shipment.totalMissing} pecas
-                        </strong>
-                      </span>
-                      <span>
-                        Custo do envio:{' '}
-                        <strong className="text-slate-900">{formatCurrency(shipment.totalCost)}</strong>
-                      </span>
+                    <footer className="mt-4 rounded-xl bg-slate-50 p-4">
+                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        <div className="rounded-lg bg-white/80 p-3 text-center shadow-sm">
+                          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            Total enviado
+                          </div>
+                          <div className="mt-1 text-lg font-semibold text-slate-900">
+                            {shipment.totalSent}
+                          </div>
+                          <div className="text-xs text-slate-500">
+                            {shipment.totalSent === 1 ? 'peça' : 'peças'}
+                          </div>
+                        </div>
+                        <div className="rounded-lg bg-white/80 p-3 text-center shadow-sm">
+                          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            Retornadas
+                          </div>
+                          <div className="mt-1 text-lg font-semibold text-slate-900">
+                            {shipment.totalReturned}
+                          </div>
+                          <div className="text-xs text-slate-500">
+                            {shipment.totalReturned === 1 ? 'peça' : 'peças'}
+                          </div>
+                        </div>
+                        <div className="rounded-lg bg-white/80 p-3 text-center shadow-sm">
+                          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            Faltantes
+                          </div>
+                          <div className={`mt-1 text-lg font-semibold ${
+                            shipment.totalMissing > 0 ? 'text-amber-600' : 'text-slate-900'
+                          }`}>
+                            {shipment.totalMissing}
+                          </div>
+                          <div className={`text-xs ${
+                            shipment.totalMissing > 0 ? 'text-amber-500' : 'text-slate-500'
+                          }`}>
+                            {shipment.totalMissing === 1 ? 'peça' : 'peças'}
+                          </div>
+                        </div>
+                        <div className="rounded-lg bg-white/80 p-3 text-center shadow-sm">
+                          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            Custo total
+                          </div>
+                          <div className="mt-1 text-lg font-semibold text-slate-900">
+                            {formatCurrency(shipment.totalCost)}
+                          </div>
+                          <div className="text-xs text-slate-500">
+                            do envio
+                          </div>
+                        </div>
+                      </div>
                     </footer>
                   </article>
                 ))
