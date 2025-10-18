@@ -157,7 +157,15 @@ export const ReportsSection = () => {
 
           <div className="mt-4 -mx-4 sm:mx-0 sm:overflow-hidden sm:rounded-2xl sm:border sm:border-slate-100">
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-100 text-sm">
+              <table className="min-w-full divide-y divide-slate-100 text-sm" style={{tableLayout: 'fixed'}}>
+                <colgroup>
+                  <col className="w-20 sm:w-24" />
+                  <col className="w-32 sm:w-auto" />
+                  <col className="w-16 sm:w-20" />
+                  <col className="w-16 sm:w-20" />
+                  <col className="w-16 sm:w-20" />
+                  <col className="w-20 sm:w-28" />
+                </colgroup>
                 <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                   <tr>
                     <th scope="col" className="px-2 py-2 sm:px-4 sm:py-3">Data</th>
@@ -179,33 +187,34 @@ export const ReportsSection = () => {
                     filteredShipments.map((shipment) => (
                       <tr key={shipment.id} className="align-top transition hover:bg-slate-50/60">
                         <td className="px-2 py-2 text-xs font-semibold text-slate-900 sm:px-4 sm:py-3 sm:text-sm">
-                          {formatDate(shipment.sentAt)}
+                          <div className="whitespace-nowrap">{formatDate(shipment.sentAt)}</div>
                         </td>
                         <td className="px-2 py-2 text-slate-600 sm:px-4 sm:py-3">
-                          <div className="max-w-[120px] sm:max-w-none">
-                            <ul className="list-inside list-disc space-y-1 text-xs text-slate-500">
-                              {shipment.items.map((item) => {
-                                const product = products.find((p) => p.id === item.productId);
-                                return (
-                                  <li key={item.id} className="truncate">
-                                    {product?.name ?? 'Produto removido'} — {item.quantitySent}
-                                  </li>
-                                );
-                              })}
-                            </ul>
+                          <div className="space-y-1">
+                            {shipment.items.map((item) => {
+                              const product = products.find((p) => p.id === item.productId);
+                              return (
+                                <div key={item.id} className="text-xs text-slate-500">
+                                  <div className="truncate font-medium text-slate-700">
+                                    {product?.name ?? 'Produto removido'}
+                                  </div>
+                                  <div className="text-slate-500">{item.quantitySent} peças</div>
+                                </div>
+                              );
+                            })}
                           </div>
                         </td>
                         <td className="px-2 py-2 text-right text-slate-600 sm:px-4 sm:py-3">
-                          {shipment.totalSent.toLocaleString('pt-BR')}
+                          <div className="font-medium">{shipment.totalSent}</div>
                         </td>
                         <td className="px-2 py-2 text-right text-slate-600 sm:px-4 sm:py-3">
-                          {shipment.totalReturned.toLocaleString('pt-BR')}
+                          <div className="font-medium">{shipment.totalReturned}</div>
                         </td>
                         <td className="px-2 py-2 text-right text-amber-600 sm:px-4 sm:py-3">
-                          {shipment.totalMissing.toLocaleString('pt-BR')}
+                          <div className="font-medium">{shipment.totalMissing}</div>
                         </td>
                         <td className="px-2 py-2 text-right text-slate-900 sm:px-4 sm:py-3">
-                          <div className="truncate max-w-[60px] sm:max-w-none">{formatCurrency(shipment.totalCost)}</div>
+                          <div className="font-semibold whitespace-nowrap">{formatCurrency(shipment.totalCost)}</div>
                         </td>
                       </tr>
                     ))
