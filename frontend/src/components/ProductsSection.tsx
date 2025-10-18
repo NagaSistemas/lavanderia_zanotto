@@ -117,7 +117,15 @@ export const ProductsSection = () => {
     setError(null);
   };
 
-  const handleRemove = async (id: string) => {
+  const handleRemove = async (id: string, productName: string) => {
+    const confirmed = window.confirm(
+      `Tem certeza que deseja apagar o produto "${productName}"?\n\nTodos os dados de envio, retorno e financeiro relacionados a ele serão perdidos permanentemente.`
+    );
+    
+    if (!confirmed) {
+      return;
+    }
+
     setRemovingId(id);
     setError(null);
     try {
@@ -325,7 +333,7 @@ export const ProductsSection = () => {
                               </button>
                               <button
                                 type="button"
-                                onClick={() => handleRemove(product.id)}
+                                onClick={() => handleRemove(product.id, product.name)}
                                 disabled={removingId === product.id}
                                 className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 text-red-600 transition hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-200 disabled:cursor-not-allowed disabled:opacity-60"
                                 aria-label={removingId === product.id ? 'Removendo produto' : 'Remover produto'}
