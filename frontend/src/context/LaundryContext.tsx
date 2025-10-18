@@ -31,7 +31,7 @@ type LaundryContextValue = {
     quantityReturned: number,
   ) => Promise<void>;
   removeShipment: (shipmentId: string) => Promise<void>;
-  finalizeShipment: (shipmentId: string) => Promise<void>;
+  finalizeShipment: (shipmentId: string) => void;
 };
 
 const API_BASE_URL =
@@ -224,8 +224,7 @@ export const LaundryProvider = ({ children }: { children: ReactNode }) => {
   );
 
   const finalizeShipment = useCallback(
-    async (shipmentId: string) => {
-      // Remove do histórico local (dados já estão salvos no banco)
+    (shipmentId: string) => {
       setState((prev) => ({
         ...prev,
         shipments: prev.shipments.filter((shipment) => shipment.id !== shipmentId),

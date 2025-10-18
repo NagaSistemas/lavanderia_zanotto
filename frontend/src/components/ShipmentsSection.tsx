@@ -418,7 +418,7 @@ export const ShipmentsSection = () => {
                             try {
                               await finalizeShipment(shipment.id);
                             } catch (error) {
-                              setFormError(error instanceof Error ? error.message : 'Falha ao registrar envio.');
+                              setFormError(error instanceof Error ? error.message : 'Falha ao registrar retorno.');
                             } finally {
                               setFinalizingId(null);
                             }
@@ -426,7 +426,7 @@ export const ShipmentsSection = () => {
                           disabled={finalizingId === shipment.id}
                           className="inline-flex items-center justify-center rounded-lg bg-primary px-3 py-1 text-xs font-semibold text-white transition hover:bg-primary-dark disabled:opacity-60"
                         >
-                          {finalizingId === shipment.id ? 'Registrando...' : 'Registrar envio'}
+                          {finalizingId === shipment.id ? 'Registrando...' : 'Registrar retorno'}
                         </button>
                         <button
                           type="button"
