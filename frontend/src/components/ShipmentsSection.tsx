@@ -381,7 +381,7 @@ export const ShipmentsSection = () => {
               </div>
             </header>
 
-            <div className="space-y-4 px-3 py-4 sm:px-6 sm:py-6">
+            <div className="space-y-3 px-3 py-4 sm:space-y-4 sm:px-6 sm:py-6">
               {shipmentDetails.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/60 px-4 py-8 text-center text-sm text-slate-500 sm:rounded-2xl">
                   Nenhum envio registrado ainda. Utilize o formulario ao lado para iniciar o controle.
@@ -390,21 +390,21 @@ export const ShipmentsSection = () => {
                 shipmentDetails.map((shipment) => (
                   <article
                     key={shipment.id}
-                    className="rounded-xl border border-slate-200 bg-white/80 p-4 shadow-sm transition hover:border-primary/40 sm:rounded-2xl sm:p-5"
+                    className="rounded-lg border border-slate-200 bg-white/80 p-3 shadow-sm transition hover:border-primary/40 sm:rounded-xl sm:p-4 lg:rounded-2xl lg:p-5"
                   >
-                    <header className="flex flex-col gap-3 border-b border-slate-100 pb-4 text-sm text-slate-600 lg:flex-row lg:items-center lg:justify-between">
-                      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                        <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-primary sm:px-3">
-                          Envio {formatDate(shipment.sentAt)}
+                    <header className="flex flex-col gap-2 border-b border-slate-100 pb-3 text-sm text-slate-600 sm:gap-3 sm:pb-4 lg:flex-row lg:items-center lg:justify-between">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+                        <span className="inline-flex w-fit items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-primary sm:gap-2 sm:px-3">
+                          📦 {formatDate(shipment.sentAt)}
                         </span>
                         {shipment.expectedReturnAt ? (
-                          <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600 sm:px-3">
-                            Retorno: {formatDate(shipment.expectedReturnAt)}
+                          <span className="inline-flex w-fit items-center gap-1 rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600 sm:gap-2 sm:px-3">
+                            ⏰ {formatDate(shipment.expectedReturnAt)}
                           </span>
                         ) : null}
                         {shipment.notes ? (
-                          <span className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-600 sm:px-3">
-                            {shipment.notes}
+                          <span className="inline-flex w-fit items-center gap-1 rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-600 sm:gap-2 sm:px-3">
+                            📝 {shipment.notes}
                           </span>
                         ) : null}
                       </div>
@@ -412,95 +412,138 @@ export const ShipmentsSection = () => {
                         type="button"
                         onClick={() => handleRemoveShipment(shipment.id)}
                         disabled={removingId === shipment.id}
-                        className="inline-flex items-center justify-center rounded-lg border border-red-200 px-2 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-60 sm:px-3"
+                        className="inline-flex w-fit items-center justify-center rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-60 sm:px-4 sm:py-2"
                       >
-                        {removingId === shipment.id ? 'Removendo...' : 'Apagar envio'}
+                        {removingId === shipment.id ? '🗑️ Removendo...' : '🗑️ Apagar'}
                       </button>
                     </header>
 
-                    <div className="mt-4 -mx-4 sm:mx-0 sm:overflow-hidden sm:rounded-xl sm:border sm:border-slate-100">
-                      <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-slate-100 text-sm">
-                          <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                            <tr>
-                              <th scope="col" className="px-2 py-2 sm:px-4">
-                                Item
-                              </th>
-                              <th scope="col" className="px-2 py-2 text-right sm:px-4">
-                                Env.
-                              </th>
-                              <th scope="col" className="px-2 py-2 text-right sm:px-4">
-                                Retorno
-                              </th>
-                              <th scope="col" className="px-2 py-2 text-right sm:px-4">
-                                Custo
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100 bg-white">
-                            {shipment.items.map((item) => {
-                              const product = products.find((productItem) => productItem.id === item.productId);
-                              const price = product?.pricePerUnit ?? 0;
-                              const lineCost = item.quantitySent * price;
-                              return (
-                                <tr key={item.id} className="transition hover:bg-slate-50/60">
-                                  <td className="px-2 py-2 text-xs font-semibold text-slate-900 sm:px-4 sm:text-sm">
-                                    <div className="truncate max-w-[80px] sm:max-w-none">{product?.name ?? 'Produto removido'}</div>
-                                  </td>
-                                  <td className="px-2 py-2 text-right text-slate-600 sm:px-4">
-                                    {item.quantitySent}
-                                  </td>
-                                  <td className="px-2 py-2 text-right sm:px-4">
-                                    <div className="flex flex-col items-end gap-1">
-                                      <input
-                                        type="number"
-                                        min={0}
-                                        max={item.quantitySent}
-                                        value={item.quantityReturned}
-                                        onChange={(event) =>
-                                          handleReturnChange(
-                                            shipment.id,
-                                            item.id,
-                                            event.target.value,
-                                          )
-                                        }
-                                        className="w-16 rounded-lg border border-slate-300 px-2 py-1 text-right text-xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40 sm:w-20 sm:text-sm"
-                                      />
-                                      {updatingReturnId === item.id ? (
-                                        <span className="text-xs text-slate-500">Salvando...</span>
-                                      ) : null}
-                                    </div>
-                                  </td>
-                                  <td className="px-2 py-2 text-right text-slate-900 sm:px-4">
-                                    <div className="truncate max-w-[60px] sm:max-w-none">{formatCurrency(lineCost)}</div>
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
+                    {/* Mobile: Card Layout */}
+                    <div className="mt-3 space-y-3 sm:hidden">
+                      {shipment.items.map((item) => {
+                        const product = products.find((productItem) => productItem.id === item.productId);
+                        const price = product?.pricePerUnit ?? 0;
+                        const lineCost = item.quantitySent * price;
+                        return (
+                          <div key={item.id} className="rounded-lg border border-slate-100 bg-slate-50/50 p-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1 min-w-0">
+                                <h4 className="truncate text-sm font-semibold text-slate-900">
+                                  {product?.name ?? 'Produto removido'}
+                                </h4>
+                                <div className="mt-1 flex items-center gap-4 text-xs text-slate-600">
+                                  <span>Enviadas: <strong>{item.quantitySent}</strong></span>
+                                  <span>Custo: <strong>{formatCurrency(lineCost)}</strong></span>
+                                </div>
+                              </div>
+                              <div className="ml-3 flex flex-col items-end gap-1">
+                                <label className="text-xs font-medium text-slate-500">Retornadas</label>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  max={item.quantitySent}
+                                  value={item.quantityReturned}
+                                  onChange={(event) =>
+                                    handleReturnChange(
+                                      shipment.id,
+                                      item.id,
+                                      event.target.value,
+                                    )
+                                  }
+                                  className="w-16 rounded-md border border-slate-300 px-2 py-1 text-center text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/40"
+                                />
+                                {updatingReturnId === item.id && (
+                                  <span className="text-xs text-slate-500">Salvando...</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Desktop: Table Layout */}
+                    <div className="mt-4 hidden sm:block">
+                      <div className="-mx-4 sm:mx-0 sm:overflow-hidden sm:rounded-xl sm:border sm:border-slate-100">
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full divide-y divide-slate-100 text-sm">
+                            <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              <tr>
+                                <th scope="col" className="px-4 py-3">Item</th>
+                                <th scope="col" className="px-4 py-3 text-right">Enviadas</th>
+                                <th scope="col" className="px-4 py-3 text-right">Retornadas</th>
+                                <th scope="col" className="px-4 py-3 text-right">Custo</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 bg-white">
+                              {shipment.items.map((item) => {
+                                const product = products.find((productItem) => productItem.id === item.productId);
+                                const price = product?.pricePerUnit ?? 0;
+                                const lineCost = item.quantitySent * price;
+                                return (
+                                  <tr key={item.id} className="transition hover:bg-slate-50/60">
+                                    <td className="px-4 py-3 text-sm font-semibold text-slate-900">
+                                      {product?.name ?? 'Produto removido'}
+                                    </td>
+                                    <td className="px-4 py-3 text-right text-slate-600">
+                                      {item.quantitySent}
+                                    </td>
+                                    <td className="px-4 py-3 text-right">
+                                      <div className="flex flex-col items-end gap-1">
+                                        <input
+                                          type="number"
+                                          min={0}
+                                          max={item.quantitySent}
+                                          value={item.quantityReturned}
+                                          onChange={(event) =>
+                                            handleReturnChange(
+                                              shipment.id,
+                                              item.id,
+                                              event.target.value,
+                                            )
+                                          }
+                                          className="w-20 rounded-lg border border-slate-300 px-2 py-1 text-right text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
+                                        />
+                                        {updatingReturnId === item.id && (
+                                          <span className="text-xs text-slate-500">Salvando...</span>
+                                        )}
+                                      </div>
+                                    </td>
+                                    <td className="px-4 py-3 text-right text-slate-900">
+                                      {formatCurrency(lineCost)}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
                     </div>
 
-                    <footer className="mt-4 grid gap-2 rounded-xl bg-slate-50 px-3 py-3 text-xs text-slate-600 sm:px-4 sm:text-sm md:grid-cols-2 xl:grid-cols-4">
-                      <span>
-                        Total enviado:{' '}
-                        <strong className="text-slate-900">{shipment.totalSent} pecas</strong>
-                      </span>
-                      <span>
-                        Retorno:{' '}
-                        <strong className="text-slate-900">{shipment.totalReturned} pecas</strong>
-                      </span>
-                      <span>
-                        Faltantes:{' '}
-                        <strong className={shipment.totalMissing > 0 ? 'text-amber-600' : 'text-slate-900'}>
-                          {shipment.totalMissing} pecas
-                        </strong>
-                      </span>
-                      <span>
-                        Custo do envio:{' '}
-                        <strong className="text-slate-900">{formatCurrency(shipment.totalCost)}</strong>
-                      </span>
+                    <footer className="mt-3 rounded-lg bg-slate-50 p-3 sm:mt-4 sm:rounded-xl sm:p-4">
+                      <div className="grid gap-2 text-xs sm:gap-3 sm:text-sm">
+                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-4">
+                          <div className="text-center sm:text-left">
+                            <div className="text-slate-500">Enviadas</div>
+                            <div className="font-semibold text-slate-900">{shipment.totalSent}</div>
+                          </div>
+                          <div className="text-center sm:text-left">
+                            <div className="text-slate-500">Retornadas</div>
+                            <div className="font-semibold text-slate-900">{shipment.totalReturned}</div>
+                          </div>
+                          <div className="text-center sm:text-left">
+                            <div className="text-slate-500">Faltantes</div>
+                            <div className={`font-semibold ${shipment.totalMissing > 0 ? 'text-amber-600' : 'text-slate-900'}`}>
+                              {shipment.totalMissing}
+                            </div>
+                          </div>
+                          <div className="text-center sm:text-left">
+                            <div className="text-slate-500">Custo Total</div>
+                            <div className="font-semibold text-slate-900">{formatCurrency(shipment.totalCost)}</div>
+                          </div>
+                        </div>
+                      </div>
                     </footer>
                   </article>
                 ))
