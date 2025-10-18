@@ -247,7 +247,7 @@ export const ShipmentsSection = () => {
                   <button
                     type="button"
                     onClick={() => setLines((prev) => [...prev, createFormLine()])}
-                    className="inline-flex items-center rounded-lg border border-dashed border-primary/50 px-3 py-1 text-xs font-semibold text-primary transition hover:border-primary hover:bg-primary/10"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary text-lg font-semibold text-white shadow transition hover:bg-primary-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 sm:h-9 sm:w-9"
                     aria-label="Adicionar item"
                   >
                     +
@@ -261,71 +261,87 @@ export const ShipmentsSection = () => {
 
                     return (
                       <div
-                      key={line.id}
-                      className="rounded-xl border border-slate-200 bg-white/90 p-3 shadow-sm transition hover:border-primary/40 sm:rounded-2xl sm:p-4"
-                    >
-                        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr),160px,auto] sm:items-end">
-                        <div className="space-y-2">
-                          <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                            Produto {index + 1}
-                          </label>
-                          <select
-                            value={line.productId}
-                            onChange={(event) =>
-                              handleLineChange(line.id, 'productId', event.target.value)
-                            }
-                            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
-                            required
-                          >
-                            <option value="" disabled>
-                              Selecione um produto
-                            </option>
-                            {products.map((product) => (
-                              <option key={product.id} value={product.id}>
-                                {product.name} — {formatCurrency(product.pricePerUnit)}
+                        key={line.id}
+                        className="rounded-xl border border-slate-200 bg-white/90 p-3 shadow-sm transition hover:border-primary/40 sm:rounded-2xl sm:p-4"
+                      >
+                        <div className="flex flex-col gap-3 sm:grid sm:grid-cols-[minmax(0,1fr),160px,auto] sm:items-end">
+                          <div className="space-y-2">
+                            <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              Produto {index + 1}
+                            </label>
+                            <select
+                              value={line.productId}
+                              onChange={(event) =>
+                                handleLineChange(line.id, 'productId', event.target.value)
+                              }
+                              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
+                              required
+                            >
+                              <option value="" disabled>
+                                Selecione um produto
                               </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div className="space-y-2">
-                          <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                            Quantidade
-                          </label>
-                          <div className="inline-flex items-center gap-3 rounded-lg border border-slate-300 bg-white px-2 py-1">
-                            <button
-                              type="button"
-                              aria-label="Remover uma unidade"
-                              onClick={() => adjustLineQuantity(line.id, -1)}
-                              disabled={quantity === 0}
-                              className="inline-flex h-8 w-8 items-center justify-center rounded-md text-lg font-semibold text-slate-700 transition hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 disabled:cursor-not-allowed disabled:opacity-40 sm:h-9 sm:w-9"
-                            >
-                              -
-                            </button>
-                            <span className="min-w-[2.5rem] text-center text-sm font-semibold text-slate-900 sm:text-base">
-                              {quantity}
-                            </span>
-                            <button
-                              type="button"
-                              aria-label="Adicionar uma unidade"
-                              onClick={() => adjustLineQuantity(line.id, 1)}
-                              className="inline-flex h-8 w-8 items-center justify-center rounded-md text-lg font-semibold text-slate-700 transition hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 sm:h-9 sm:w-9"
-                            >
-                              +
-                            </button>
+                              {products.map((product) => (
+                                <option key={product.id} value={product.id}>
+                                  {product.name} - {formatCurrency(product.pricePerUnit)}
+                                </option>
+                              ))}
+                            </select>
                           </div>
-                        </div>
 
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveLine(line.id)}
-                          disabled={lines.length === 1}
-                          className="inline-flex h-10 items-center justify-center rounded-lg border border-red-200 px-2 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50 sm:px-3"
-                        >
-                          Remover
-                        </button>
+                          <div className="space-y-2">
+                            <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              Quantidade
+                            </label>
+                            <div className="flex w-full items-center justify-between gap-3 rounded-lg border border-slate-300 bg-white px-2 py-1 sm:inline-flex sm:w-auto sm:justify-center">
+                              <button
+                                type="button"
+                                aria-label="Remover uma unidade"
+                                onClick={() => adjustLineQuantity(line.id, -1)}
+                                disabled={quantity === 0}
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-md text-lg font-semibold text-slate-700 transition hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 disabled:cursor-not-allowed disabled:opacity-40 sm:h-9 sm:w-9"
+                              >
+                                -
+                              </button>
+                              <span className="min-w-[2.5rem] text-center text-sm font-semibold text-slate-900 sm:text-base">
+                                {quantity}
+                              </span>
+                              <button
+                                type="button"
+                                aria-label="Adicionar uma unidade"
+                                onClick={() => adjustLineQuantity(line.id, 1)}
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-md text-lg font-semibold text-slate-700 transition hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 sm:h-9 sm:w-9"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveLine(line.id)}
+                            disabled={lines.length === 1}
+                            className="inline-flex h-10 w-full items-center justify-center rounded-lg border border-red-200 text-red-600 transition hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-200 disabled:cursor-not-allowed disabled:opacity-50 sm:w-10"
+                            aria-label="Remover item"
+                          >
+                            <svg
+                              className="h-5 w-5"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              aria-hidden="true"
+                            >
+                              <path d="M3 6h18" />
+                              <path d="M8 6V4.5A1.5 1.5 0 0 1 9.5 3h5A1.5 1.5 0 0 1 16 4.5V6" />
+                              <path d="M18 6v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V6" />
+                              <path d="M10 11v6" />
+                              <path d="M14 11v6" />
+                            </svg>
+                          </button>
+                        </div>
                       </div>
-                    </div>
                     );
                   })}
                 </div>

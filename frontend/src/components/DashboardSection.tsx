@@ -222,7 +222,7 @@ export const DashboardSection = () => {
                             {day.missing.toLocaleString('pt-BR')}
                           </td>
                           <td className="px-2 py-2 text-right text-slate-900 sm:px-4 sm:py-3">
-                            <div className="truncate max-w-[60px] sm:max-w-none">{formatCurrency(day.cost)}</div>
+                            <span className="whitespace-nowrap">{formatCurrency(day.cost)}</span>
                           </td>
                         </tr>
                       ))

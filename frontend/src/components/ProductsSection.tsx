@@ -298,25 +298,60 @@ export const ProductsSection = () => {
                               {product.category ?? <span className="italic text-slate-400">Sem categoria</span>}
                             </div>
                           </td>
-                          <td className="px-3 py-2 text-right text-slate-900 sm:px-6 sm:py-3">
+                          <td className="px-3 py-2 text-right text-slate-900 whitespace-nowrap sm:px-6 sm:py-3">
                             {formatCurrency(product.pricePerUnit)}
                           </td>
                           <td className="px-3 py-2 text-right sm:px-6 sm:py-3">
-                            <div className="flex justify-end gap-1 sm:gap-2">
+                            <div className="flex items-center justify-end gap-2">
                               <button
                                 type="button"
                                 onClick={() => handleEdit(product)}
-                                className="rounded-lg border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 sm:px-3"
+                                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                                aria-label="Editar produto"
                               >
-                                Editar
+                                <svg
+                                  className="h-4 w-4"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="1.8"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  aria-hidden="true"
+                                >
+                                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                  <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                </svg>
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleRemove(product.id)}
                                 disabled={removingId === product.id}
-                                className="rounded-lg border border-red-200 px-2 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-60 sm:px-3"
+                                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 text-red-600 transition hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-200 disabled:cursor-not-allowed disabled:opacity-60"
+                                aria-label={removingId === product.id ? 'Removendo produto' : 'Remover produto'}
                               >
-                                {removingId === product.id ? 'Removendo...' : 'Remover'}
+                                {removingId === product.id ? (
+                                  <span className="text-[10px] font-semibold uppercase tracking-wide text-red-600">
+                                    ...
+                                  </span>
+                                ) : (
+                                  <svg
+                                    className="h-4 w-4"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="1.8"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    aria-hidden="true"
+                                  >
+                                    <path d="M3 6h18" />
+                                    <path d="M8 6V4.5A1.5 1.5 0 0 1 9.5 3h5A1.5 1.5 0 0 1 16 4.5V6" />
+                                    <path d="M18 6v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V6" />
+                                    <path d="M10 11v6" />
+                                    <path d="M14 11v6" />
+                                  </svg>
+                                )}
                               </button>
                             </div>
                           </td>
