@@ -13,7 +13,7 @@ type FormLine = {
 const createFormLine = (): FormLine => ({
   id: `line-${Math.random().toString(36).slice(2)}`,
   productId: '',
-  quantitySent: '',
+  quantitySent: '0',
 });
 
 const getToday = () => new Date().toISOString().slice(0, 10);
@@ -56,6 +56,24 @@ export const ShipmentsSection = () => {
 
   const handleLineChange = (lineId: string, field: keyof FormLine, value: string) => {
     setLines((prev) => prev.map((line) => (line.id === lineId ? { ...line, [field]: value } : line)));
+  };
+
+  const adjustLineQuantity = (lineId: string, delta: number) => {
+    setLines((previousLines) =>
+      previousLines.map((line) => {
+        if (line.id !== lineId) {
+          return line;
+        }
+
+        const currentQuantity = Number.parseInt(line.quantitySent || '0', 10);
+        const nextQuantity = Number.isFinite(currentQuantity) ? Math.max(0, currentQuantity + delta) : 0;
+
+        return {
+          ...line,
+          quantitySent: String(nextQuantity),
+        };
+      }),
+    );
   };
 
   const handleRemoveLine = (lineId: string) => {
@@ -230,18 +248,23 @@ export const ShipmentsSection = () => {
                     type="button"
                     onClick={() => setLines((prev) => [...prev, createFormLine()])}
                     className="inline-flex items-center rounded-lg border border-dashed border-primary/50 px-3 py-1 text-xs font-semibold text-primary transition hover:border-primary hover:bg-primary/10"
+                    aria-label="Adicionar item"
                   >
-                    Adicionar item
+                    +
                   </button>
                 </div>
 
                 <div className="space-y-3">
-                  {lines.map((line, index) => (
-                    <div
+                  {lines.map((line, index) => {
+                    const parsedQuantity = Number.parseInt(line.quantitySent || '0', 10);
+                    const quantity = Number.isFinite(parsedQuantity) && parsedQuantity >= 0 ? parsedQuantity : 0;
+
+                    return (
+                      <div
                       key={line.id}
                       className="rounded-xl border border-slate-200 bg-white/90 p-3 shadow-sm transition hover:border-primary/40 sm:rounded-2xl sm:p-4"
                     >
-                      <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr),120px,auto] sm:items-end">
+                        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr),160px,auto] sm:items-end">
                         <div className="space-y-2">
                           <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                             Produto {index + 1}
@@ -269,21 +292,28 @@ export const ShipmentsSection = () => {
                           <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                             Quantidade
                           </label>
-                          <input
-                            type="number"
-                            min={0}
-                            inputMode="numeric"
-                            value={line.quantitySent}
-                            onChange={(event) =>
-                              handleLineChange(
-                                line.id,
-                                'quantitySent',
-                                event.target.value.replace(/[^0-9]/g, ''),
-                              )
-                            }
-                            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
-                            required
-                          />
+                          <div className="inline-flex items-center gap-3 rounded-lg border border-slate-300 bg-white px-2 py-1">
+                            <button
+                              type="button"
+                              aria-label="Remover uma unidade"
+                              onClick={() => adjustLineQuantity(line.id, -1)}
+                              disabled={quantity === 0}
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-md text-lg font-semibold text-slate-700 transition hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 disabled:cursor-not-allowed disabled:opacity-40 sm:h-9 sm:w-9"
+                            >
+                              -
+                            </button>
+                            <span className="min-w-[2.5rem] text-center text-sm font-semibold text-slate-900 sm:text-base">
+                              {quantity}
+                            </span>
+                            <button
+                              type="button"
+                              aria-label="Adicionar uma unidade"
+                              onClick={() => adjustLineQuantity(line.id, 1)}
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-md text-lg font-semibold text-slate-700 transition hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 sm:h-9 sm:w-9"
+                            >
+                              +
+                            </button>
+                          </div>
                         </div>
 
                         <button
@@ -296,7 +326,8 @@ export const ShipmentsSection = () => {
                         </button>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
