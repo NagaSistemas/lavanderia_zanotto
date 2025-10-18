@@ -410,33 +410,14 @@ export const ShipmentsSection = () => {
                           </span>
                         ) : null}
                       </div>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            setFinalizingId(shipment.id);
-                            try {
-                              await finalizeShipment(shipment.id);
-                            } catch (error) {
-                              setFormError(error instanceof Error ? error.message : 'Falha ao registrar retorno.');
-                            } finally {
-                              setFinalizingId(null);
-                            }
-                          }}
-                          disabled={finalizingId === shipment.id}
-                          className="inline-flex items-center justify-center rounded-lg bg-primary px-3 py-1 text-xs font-semibold text-white transition hover:bg-primary-dark disabled:opacity-60"
-                        >
-                          {finalizingId === shipment.id ? 'Registrando...' : 'Registrar retorno'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveShipment(shipment.id)}
-                          disabled={removingId === shipment.id}
-                          className="inline-flex items-center justify-center rounded-lg border border-red-200 px-3 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-60"
-                        >
-                          {removingId === shipment.id ? 'Removendo...' : 'Apagar envio'}
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveShipment(shipment.id)}
+                        disabled={removingId === shipment.id}
+                        className="inline-flex items-center justify-center rounded-lg border border-red-200 px-3 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-60"
+                      >
+                        {removingId === shipment.id ? 'Removendo...' : 'Apagar envio'}
+                      </button>
                     </header>
 
                     <div className="mt-4 overflow-hidden rounded-xl border border-slate-100">
@@ -480,55 +461,61 @@ export const ShipmentsSection = () => {
                     <div className="mt-4 rounded-xl bg-primary/5 p-4">
                       <h4 className="mb-3 text-sm font-semibold text-slate-700">Controle de retornos</h4>
                       <div className="space-y-3">
-                        {shipment.items.map((item) => {
-                          const product = products.find((productItem) => productItem.id === item.productId);
-                          return (
-                            <div key={item.id} className="flex items-center justify-between rounded-lg bg-white/80 p-3 shadow-sm">
-                              <div className="flex-1 min-w-0">
-                                <div className="text-sm font-semibold text-slate-900 truncate">
-                                  {product?.name ?? 'Produto removido'}
-                                </div>
+                        {shipment.items.map((item) => (
+                          <div key={item.id} className="flex items-center justify-center rounded-lg bg-white/80 p-3 shadow-sm">
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleReturnChange(
+                                    shipment.id,
+                                    item.id,
+                                    Math.max(0, item.quantityReturned - 1).toString(),
+                                  )
+                                }
+                                disabled={item.quantityReturned <= 0}
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-300 text-slate-600 transition hover:bg-slate-100 disabled:opacity-50"
+                              >
+                                −
+                              </button>
+                              <div className="w-12 text-center text-sm font-semibold text-slate-900">
+                                {item.quantityReturned}
                               </div>
-                              <div className="ml-3 flex items-center gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    handleReturnChange(
-                                      shipment.id,
-                                      item.id,
-                                      Math.max(0, item.quantityReturned - 1).toString(),
-                                    )
-                                  }
-                                  disabled={item.quantityReturned <= 0 || updatingReturnId === item.id}
-                                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-300 text-slate-600 transition hover:bg-slate-100 disabled:opacity-50"
-                                >
-                                  −
-                                </button>
-                                <div className="w-12 text-center text-sm font-semibold text-slate-900">
-                                  {item.quantityReturned}
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    handleReturnChange(
-                                      shipment.id,
-                                      item.id,
-                                      Math.min(item.quantitySent, item.quantityReturned + 1).toString(),
-                                    )
-                                  }
-                                  disabled={item.quantityReturned >= item.quantitySent || updatingReturnId === item.id}
-                                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-300 text-slate-600 transition hover:bg-slate-100 disabled:opacity-50"
-                                >
-                                  +
-                                </button>
-                                {updatingReturnId === item.id && (
-                                  <div className="ml-2 text-xs text-slate-500">Salvando...</div>
-                                )}
-                              </div>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleReturnChange(
+                                    shipment.id,
+                                    item.id,
+                                    Math.min(item.quantitySent, item.quantityReturned + 1).toString(),
+                                  )
+                                }
+                                disabled={item.quantityReturned >= item.quantitySent}
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-300 text-slate-600 transition hover:bg-slate-100 disabled:opacity-50"
+                              >
+                                +
+                              </button>
                             </div>
-                          );
-                        })}
+                          </div>
+                        ))}
                       </div>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          setFinalizingId(shipment.id);
+                          try {
+                            await finalizeShipment(shipment.id);
+                          } catch (error) {
+                            setFormError(error instanceof Error ? error.message : 'Falha ao registrar retorno.');
+                          } finally {
+                            setFinalizingId(null);
+                          }
+                        }}
+                        disabled={finalizingId === shipment.id}
+                        className="mt-4 w-full inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-dark disabled:opacity-60"
+                      >
+                        {finalizingId === shipment.id ? 'Registrando...' : 'Registrar retorno'}
+                      </button>
                     </div>
 
                     <footer className="mt-4 rounded-xl bg-slate-50 p-4">
