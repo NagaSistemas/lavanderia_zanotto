@@ -34,13 +34,15 @@ export const ShipmentsSection = () => {
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
-  const [updatingReturnId, setUpdatingReturnId] = useState<string | null>(null);
+
   const [finalizingId, setFinalizingId] = useState<string | null>(null);
 
   const hasProducts = products.length > 0;
 
   const shipmentDetails = useMemo(
-    () => shipments.map((shipment) => enhanceShipment(shipment, products)),
+    () => shipments
+      .filter((shipment) => !shipment.finalized)
+      .map((shipment) => enhanceShipment(shipment, products)),
     [shipments, products],
   );
 
@@ -139,13 +141,10 @@ export const ShipmentsSection = () => {
       return;
     }
 
-    setUpdatingReturnId(lineId);
     try {
       await updateShipmentReturn(shipmentId, lineId, quantity);
     } catch (error) {
       setFormError(error instanceof Error ? error.message : 'Falha ao atualizar retorno.');
-    } finally {
-      setUpdatingReturnId(null);
     }
   };
 

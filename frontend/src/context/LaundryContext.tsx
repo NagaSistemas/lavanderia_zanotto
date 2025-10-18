@@ -227,7 +227,11 @@ export const LaundryProvider = ({ children }: { children: ReactNode }) => {
     (shipmentId: string) => {
       setState((prev) => ({
         ...prev,
-        shipments: prev.shipments.filter((shipment) => shipment.id !== shipmentId),
+        shipments: prev.shipments.map((shipment) => 
+          shipment.id === shipmentId 
+            ? { ...shipment, finalized: true }
+            : shipment
+        ),
       }));
     },
     [],

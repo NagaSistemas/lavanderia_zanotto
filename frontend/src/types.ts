@@ -22,6 +22,7 @@ export type Shipment = {
   expectedReturnAt?: string;
   notes?: string;
   items: ShipmentLine[];
+  finalized?: boolean;
   createdAt: string;
   updatedAt: string;
 };
