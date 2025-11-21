@@ -61,6 +61,8 @@ Rotas disponiveis:
 - `GET /health` - status basico do servico
 - `GET/POST/PUT/DELETE /api/products`
 - `GET/POST/PATCH/DELETE /api/shipments`
+- `GET /api/shipments/returns` - lista envios com itens e nome dos produtos para a aba de retorno
+- `GET /api/shipments/:id/returns` - detalhe de um envio com os produtos e contadores de retorno
 - `PATCH /api/shipments/:id/returns` - atualiza o retorno das pecas enviadas
 
 Todas as rotas sob `/api` exigem cabecalho `Authorization: Bearer <ID_TOKEN>` obtido via Firebase Auth. Cada documento no Firestore recebe o campo `ownerId` (UID), garantindo isolamento por usuario.

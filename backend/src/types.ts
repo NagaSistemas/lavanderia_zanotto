@@ -46,3 +46,21 @@ export type ShipmentReturnUpdate = {
   lineId: string;
   quantityReturned: number;
 };
+
+export type ShipmentReturnItemView = {
+  lineId: string;
+  productId: string;
+  productName: string;
+  quantitySent: number;
+  quantityReturned: number;
+};
+
+export type ShipmentReturnView = {
+  shipmentId: string;
+  sentAt: string;
+  expectedReturnAt?: string;
+  notes?: string;
+  items: ShipmentReturnItemView[];
+  createdAt: string;
+  updatedAt: string;
+};

@@ -5,6 +5,8 @@ import {
   deleteShipment,
   getShipment,
   listShipments,
+  getShipmentReturnView,
+  listShipmentReturnViews,
   updateShipmentMeta,
   updateShipmentReturns,
 } from '../store.js';
@@ -69,6 +71,18 @@ router.get('/', async (req, res, next) => {
   }
 });
 
+router.get('/returns', async (req, res, next) => {
+  try {
+    if (!req.userId) {
+      return res.status(401).json({ message: 'Usuário não autenticado' });
+    }
+    const returnViews = await listShipmentReturnViews(req.userId);
+    res.json(returnViews);
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.get('/:id', async (req, res, next) => {
   try {
     if (!req.userId) {
@@ -79,6 +93,23 @@ router.get('/:id', async (req, res, next) => {
       return res.status(404).json({ message: 'Envio não encontrado' });
     }
     return res.json(shipment);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/:id/returns', async (req, res, next) => {
+  try {
+    if (!req.userId) {
+      return res.status(401).json({ message: 'Usuário não autenticado' });
+    }
+
+    const returnView = await getShipmentReturnView(req.params.id, req.userId);
+    if (!returnView) {
+      return res.status(404).json({ message: 'Envio não encontrado' });
+    }
+
+    return res.json(returnView);
   } catch (error) {
     next(error);
   }

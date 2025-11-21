@@ -5,8 +5,10 @@ import type {
   ShipmentInput,
   ShipmentItem,
   ShipmentReturnUpdate,
+  ShipmentReturnView,
 } from './types.js';
 import type { DocumentSnapshot } from 'firebase-admin/firestore';
+import { FieldPath } from 'firebase-admin/firestore';
 import { firestore } from './firebase.js';
 import { generateId } from './utils/id.js';
 
@@ -47,6 +49,52 @@ const mapShipmentDoc = (doc: DocumentSnapshot): Shipment => {
 
 const ensureOwnership = <T extends { ownerId: string }>(data: T, ownerId: string): T | null =>
   data.ownerId === ownerId ? data : null;
+
+const fetchProductsByIds = async (ids: string[]): Promise<Map<string, Product>> => {
+  const uniqueIds = Array.from(new Set(ids));
+  if (uniqueIds.length === 0) {
+    return new Map();
+  }
+
+  const chunkSize = 10; // limite do Firestore para consulta com operador "in"
+  const chunks: string[][] = [];
+  for (let i = 0; i < uniqueIds.length; i += chunkSize) {
+    chunks.push(uniqueIds.slice(i, i + chunkSize));
+  }
+
+  const snapshots = await Promise.all(
+    chunks.map((chunk) => productsCollection.where(FieldPath.documentId(), 'in', chunk).get()),
+  );
+
+  const products = new Map<string, Product>();
+  snapshots.forEach((snapshot) => {
+    snapshot.docs.forEach((doc) => {
+      const product = mapProductDoc(doc);
+      products.set(product.id, product);
+    });
+  });
+
+  return products;
+};
+
+const mapReturnView = (shipment: Shipment, products: Map<string, Product>): ShipmentReturnView => ({
+  shipmentId: shipment.id,
+  sentAt: shipment.sentAt,
+  expectedReturnAt: shipment.expectedReturnAt,
+  notes: shipment.notes,
+  items: shipment.items.map((item) => {
+    const product = products.get(item.productId);
+    return {
+      lineId: item.id,
+      productId: item.productId,
+      productName: product?.name ?? 'Produto removido',
+      quantitySent: item.quantitySent,
+      quantityReturned: item.quantityReturned,
+    };
+  }),
+  createdAt: shipment.createdAt,
+  updatedAt: shipment.updatedAt,
+});
 
 export const listProducts = async (ownerId: string): Promise<Product[]> => {
   const snapshot = await productsCollection.where('ownerId', '==', ownerId).orderBy('name', 'asc').get();
@@ -164,6 +212,26 @@ export const getShipment = async (id: string, ownerId: string): Promise<Shipment
 
   const shipment = mapShipmentDoc(doc);
   return ensureOwnership(shipment, ownerId);
+};
+
+export const listShipmentReturnViews = async (ownerId: string): Promise<ShipmentReturnView[]> => {
+  const shipments = await listShipments(ownerId);
+  const productIds = shipments.flatMap((shipment) => shipment.items.map((item) => item.productId));
+  const products = await fetchProductsByIds(productIds);
+  return shipments.map((shipment) => mapReturnView(shipment, products));
+};
+
+export const getShipmentReturnView = async (
+  id: string,
+  ownerId: string,
+): Promise<ShipmentReturnView | null> => {
+  const shipment = await getShipment(id, ownerId);
+  if (!shipment) {
+    return null;
+  }
+
+  const products = await fetchProductsByIds(shipment.items.map((item) => item.productId));
+  return mapReturnView(shipment, products);
 };
 
 export const createShipment = async (
