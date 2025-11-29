@@ -22,9 +22,7 @@ export const ShipmentsSection = () => {
   const {
     state: { products, shipments },
     addShipment,
-    updateShipmentReturn,
     removeShipment,
-    finalizeShipment,
   } = useLaundry();
 
   const [sentAt, setSentAt] = useState<string>(getToday());
@@ -35,14 +33,13 @@ export const ShipmentsSection = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
 
-  const [finalizingId, setFinalizingId] = useState<string | null>(null);
-
   const hasProducts = products.length > 0;
 
   const shipmentDetails = useMemo(
-    () => shipments
-      .filter((shipment) => !shipment.finalized)
-      .map((shipment) => enhanceShipment(shipment, products)),
+    () =>
+      shipments
+        .filter((shipment) => !shipment.finalized)
+        .map((shipment) => enhanceShipment(shipment, products)),
     [shipments, products],
   );
 
@@ -135,19 +132,6 @@ export const ShipmentsSection = () => {
     }
   };
 
-  const handleReturnChange = async (shipmentId: string, lineId: string, value: string) => {
-    const quantity = Number.parseInt(value || '0', 10);
-    if (Number.isNaN(quantity) || quantity < 0) {
-      return;
-    }
-
-    try {
-      await updateShipmentReturn(shipmentId, lineId, quantity);
-    } catch (error) {
-      setFormError(error instanceof Error ? error.message : 'Falha ao atualizar retorno.');
-    }
-  };
-
   const handleRemoveShipment = async (shipmentId: string) => {
     setRemovingId(shipmentId);
     setFormError(null);
@@ -178,7 +162,7 @@ export const ShipmentsSection = () => {
                 Controle de envios
               </h2>
               <p className="text-sm text-slate-600">
-                Registre os lotes enviados para a lavanderia, acompanhe retornos e mantenha o histórico organizado. As informações alimentam relatórios financeiros e alertas operacionais.
+                Registre os lotes enviados para a lavanderia e acompanhe o histórico com datas e custos. O retorno agora fica na aba “Retornos”.
               </p>
             </div>
             <div className="grid gap-2 grid-cols-2 sm:gap-3 lg:grid-cols-4">
@@ -195,7 +179,7 @@ export const ShipmentsSection = () => {
             <header className="space-y-1">
               <h3 className="text-base font-semibold text-slate-900 sm:text-lg">Registrar novo envio</h3>
               <p className="text-xs text-slate-600">
-                Informe data, itens e quantidades para o lote que sera enviado. Os custos sao calculados automaticamente.
+                Informe data, itens e quantidades para o lote que será enviado.
               </p>
             </header>
 
@@ -216,7 +200,7 @@ export const ShipmentsSection = () => {
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="expected-return" className="text-sm font-semibold text-slate-700">
-                    Previsao de retorno
+                    Previsão de retorno
                   </label>
                   <input
                     id="expected-return"
@@ -230,7 +214,7 @@ export const ShipmentsSection = () => {
 
               <div className="space-y-2">
                 <label htmlFor="notes" className="text-sm font-semibold text-slate-700">
-                  Observacoes (opcional)
+                  Observações (opcional)
                 </label>
                 <input
                   id="notes"
@@ -374,10 +358,10 @@ export const ShipmentsSection = () => {
             <header className="flex flex-col gap-2 border-b border-slate-200 px-4 py-4 sm:px-6 sm:py-5 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-                  Historico de envios
+                  Histórico de envios
                 </h3>
                 <p className="text-sm text-slate-600">
-                  Monitore retornos, faltas e custos por lote. Atualize os volumes retornados conforme a lavanderia devolve os itens.
+                  Monitore volumes, custos e datas. Para registrar retornos, vá para a aba “Retornos”.
                 </p>
               </div>
             </header>
@@ -385,7 +369,7 @@ export const ShipmentsSection = () => {
             <div className="space-y-4 px-4 py-6 sm:px-6">
               {shipmentDetails.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/60 px-4 py-8 text-center text-sm text-slate-500 sm:rounded-2xl">
-                  Nenhum envio registrado ainda. Utilize o formulario ao lado para iniciar o controle.
+                  Nenhum envio registrado ainda. Utilize o formulário ao lado para iniciar o controle.
                 </div>
               ) : (
                 shipmentDetails.map((shipment) => (
@@ -430,6 +414,9 @@ export const ShipmentsSection = () => {
                               Enviadas
                             </th>
                             <th scope="col" className="px-4 py-2 text-right">
+                              Retornadas
+                            </th>
+                            <th scope="col" className="px-4 py-2 text-right">
                               Custo
                             </th>
                           </tr>
@@ -447,6 +434,9 @@ export const ShipmentsSection = () => {
                                 <td className="px-4 py-2 text-right text-slate-600">
                                   {item.quantitySent}
                                 </td>
+                                <td className="px-4 py-2 text-right text-slate-600">
+                                  {item.quantityReturned}
+                                </td>
                                 <td className="px-4 py-2 text-right text-slate-900">
                                   {formatCurrency(lineCost)}
                                 </td>
@@ -455,72 +445,6 @@ export const ShipmentsSection = () => {
                           })}
                         </tbody>
                       </table>
-                    </div>
-
-                    <div className="mt-4 rounded-xl bg-primary/5 p-4">
-                      <h4 className="mb-3 text-sm font-semibold text-slate-700">Controle de retornos</h4>
-                      <div className="space-y-3">
-                        {shipment.items.map((item) => (
-                          <div key={item.id} className="flex items-center justify-center rounded-lg bg-white/80 p-3 shadow-sm">
-                            <div className="flex items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  handleReturnChange(
-                                    shipment.id,
-                                    item.id,
-                                    Math.max(0, item.quantityReturned - 1).toString(),
-                                  )
-                                }
-                                disabled={item.quantityReturned <= 0}
-                                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-300 text-slate-600 transition hover:bg-slate-100 disabled:opacity-50"
-                              >
-                                −
-                              </button>
-                              <div className="w-12 text-center text-sm font-semibold text-slate-900">
-                                {item.quantityReturned}
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  handleReturnChange(
-                                    shipment.id,
-                                    item.id,
-                                    Math.min(item.quantitySent, item.quantityReturned + 1).toString(),
-                                  )
-                                }
-                                disabled={item.quantityReturned >= item.quantitySent}
-                                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-300 text-slate-600 transition hover:bg-slate-100 disabled:opacity-50"
-                              >
-                                +
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          setFinalizingId(shipment.id);
-                          try {
-                            await finalizeShipment(shipment.id);
-                          } catch (error) {
-                            setFormError(error instanceof Error ? error.message : 'Falha ao registrar retorno.');
-                          } finally {
-                            setFinalizingId(null);
-                          }
-                        }}
-                        disabled={finalizingId === shipment.id || shipment.totalReturned !== shipment.totalSent}
-                        className="mt-4 w-full inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-dark disabled:opacity-60"
-                        title={shipment.totalReturned !== shipment.totalSent ? 'Todos os itens devem ser retornados para finalizar' : ''}
-                      >
-                        {finalizingId === shipment.id ? 'Registrando...' : 'Registrar retorno'}
-                      </button>
-                      {shipment.totalReturned !== shipment.totalSent && (
-                        <p className="mt-2 text-xs text-amber-600 text-center">
-                          Ajuste os retornos para igualar o total enviado ({shipment.totalSent} peças)
-                        </p>
-                      )}
                     </div>
 
                     <footer className="mt-4 rounded-xl bg-slate-50 p-4">
@@ -533,7 +457,7 @@ export const ShipmentsSection = () => {
                             {shipment.totalSent}
                           </div>
                           <div className="text-xs text-slate-500">
-                            {shipment.totalSent === 1 ? 'peça' : 'peças'}
+                            {shipment.totalSent === 1 ? 'peca' : 'pecas'}
                           </div>
                         </div>
                         <div className="rounded-lg bg-white/80 p-3 text-center shadow-sm">
@@ -544,7 +468,7 @@ export const ShipmentsSection = () => {
                             {shipment.totalReturned}
                           </div>
                           <div className="text-xs text-slate-500">
-                            {shipment.totalReturned === 1 ? 'peça' : 'peças'}
+                            {shipment.totalReturned === 1 ? 'peca' : 'pecas'}
                           </div>
                         </div>
                         <div className="rounded-lg bg-white/80 p-3 text-center shadow-sm">
@@ -559,7 +483,7 @@ export const ShipmentsSection = () => {
                           <div className={`text-xs ${
                             shipment.totalMissing > 0 ? 'text-amber-500' : 'text-slate-500'
                           }`}>
-                            {shipment.totalMissing === 1 ? 'peça' : 'peças'}
+                            {shipment.totalMissing === 1 ? 'peca' : 'pecas'}
                           </div>
                         </div>
                         <div className="rounded-lg bg-white/80 p-3 text-center shadow-sm">

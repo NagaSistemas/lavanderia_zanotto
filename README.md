@@ -62,10 +62,18 @@ Rotas disponiveis:
 - `GET/POST/PUT/DELETE /api/products`
 - `GET/POST/PATCH/DELETE /api/shipments`
 - `GET /api/shipments/returns` - lista envios com itens e nome dos produtos para a aba de retorno
+- `GET /api/shipments/returns/by-product` - consolida envios e retornos por produto, exibindo totais enviados, retornados e pendentes (ficha unica por tipo de peca)
+- `POST /api/shipments/returns/by-product` - registra retorno agregado por tipo de item e distribui a quantidade entre envios pendentes de forma FIFO
 - `GET /api/shipments/:id/returns` - detalhe de um envio com os produtos e contadores de retorno
 - `PATCH /api/shipments/:id/returns` - atualiza o retorno das pecas enviadas
 
 Todas as rotas sob `/api` exigem cabecalho `Authorization: Bearer <ID_TOKEN>` obtido via Firebase Auth. Cada documento no Firestore recebe o campo `ownerId` (UID), garantindo isolamento por usuario.
+
+### Como usar o retorno agregado por tipo de peca
+
+1. Lance envios normalmente (POST `/api/shipments`); os totais enviados sao somados por produto.
+2. Para registrar a volta do enxoval sem precisar abrir envio a envio, chame `POST /api/shipments/returns/by-product` com um array de `{ productId, quantity, occurredAt?, notes? }`. A API distribui a quantidade pelo saldo pendente (FIFO) e devolve o resultado aplicado mais a ficha consolidada.
+3. Consulte `GET /api/shipments/returns/by-product?pendingOnly=true` para ver a ficha unica de cada tipo de peca, com totais enviados, retornados e pendentes, alem do historico dos envios relacionados.
 
 ## Regras sugeridas para o Firestore
 

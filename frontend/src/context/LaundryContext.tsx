@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import {
   createContext,
   useCallback,
@@ -14,6 +15,8 @@ import {
   type ProductPayload,
   type Shipment,
   type ShipmentPayload,
+  type ProductReturnTicket,
+  type ProductReturnResult,
 } from '../types';
 
 type LaundryContextValue = {
@@ -27,11 +30,18 @@ type LaundryContextValue = {
   addShipment: (payload: ShipmentPayload) => Promise<void>;
   updateShipmentReturn: (
     shipmentId: string,
-    lineId: string,
-    quantityReturned: number,
+    updates: Array<{ lineId: string; quantityReturned: number }>,
   ) => Promise<void>;
   removeShipment: (shipmentId: string) => Promise<void>;
   finalizeShipment: (shipmentId: string) => void;
+  applyReturnByProduct: (
+    updates: Array<{
+      productId: string;
+      quantity: number;
+      occurredAt?: string;
+      notes?: string;
+    }>,
+  ) => Promise<{ results: ProductReturnResult[]; tickets: ProductReturnTicket[] }>;
 };
 
 const API_BASE_URL =
@@ -43,6 +53,7 @@ const LaundryContext = createContext<LaundryContextValue | undefined>(undefined)
 const initialState: LaundryState = {
   products: [],
   shipments: [],
+  returnTickets: [],
 };
 
 const buildUrl = (path: string) => `${API_BASE_URL}${path}`;
@@ -104,13 +115,15 @@ export const LaundryProvider = ({ children }: { children: ReactNode }) => {
 
     setLoading(true);
     try {
-      const [products, shipments] = await Promise.all([
+      const [products, shipments, returnTickets] = await Promise.all([
         authorizedRequest<Product[]>('/api/products'),
         authorizedRequest<Shipment[]>('/api/shipments'),
+        authorizedRequest<ProductReturnTicket[]>('/api/shipments/returns/by-product'),
       ]);
       setState({
         products,
         shipments,
+        returnTickets,
       });
       setError(null);
     } catch (requestError) {
@@ -122,6 +135,11 @@ export const LaundryProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
     }
   }, [authLoading, user, authorizedRequest]);
+
+  const fetchReturnTickets = useCallback(
+    () => authorizedRequest<ProductReturnTicket[]>('/api/shipments/returns/by-product'),
+    [authorizedRequest],
+  );
 
   useEffect(() => {
     void refresh();
@@ -164,6 +182,12 @@ export const LaundryProvider = ({ children }: { children: ReactNode }) => {
       await authorizedRequest<void>(`/api/products/${id}`, {
         method: 'DELETE',
       });
+      let tickets: ProductReturnTicket[] | null = null;
+      try {
+        tickets = await fetchReturnTickets();
+      } catch (error) {
+        console.error('Erro ao atualizar ficha de retornos', error);
+      }
       setState((prev) => {
         const products = prev.products.filter((product) => product.id !== id);
         const shipments = prev.shipments
@@ -172,10 +196,10 @@ export const LaundryProvider = ({ children }: { children: ReactNode }) => {
             items: shipment.items.filter((item) => item.productId !== id),
           }))
           .filter((shipment) => shipment.items.length > 0);
-        return { products, shipments };
+        return { ...prev, products, shipments, returnTickets: tickets ?? prev.returnTickets };
       });
     },
-    [authorizedRequest],
+    [authorizedRequest, fetchReturnTickets],
   );
 
   const addShipment = useCallback(
@@ -184,30 +208,44 @@ export const LaundryProvider = ({ children }: { children: ReactNode }) => {
         method: 'POST',
         body: JSON.stringify(payload),
       });
+      let tickets: ProductReturnTicket[] | null = null;
+      try {
+        tickets = await fetchReturnTickets();
+      } catch (error) {
+        console.error('Erro ao atualizar ficha de retornos', error);
+      }
       setState((prev) => ({
         ...prev,
         shipments: [shipment, ...prev.shipments].sort((a, b) =>
           b.sentAt.localeCompare(a.sentAt),
         ),
+        returnTickets: tickets ?? prev.returnTickets,
       }));
     },
-    [authorizedRequest],
+    [authorizedRequest, fetchReturnTickets],
   );
 
   const updateShipmentReturn = useCallback(
-    async (shipmentId: string, lineId: string, quantityReturned: number) => {
+    async (shipmentId: string, updates: Array<{ lineId: string; quantityReturned: number }>) => {
       const shipment = await authorizedRequest<Shipment>(`/api/shipments/${shipmentId}/returns`, {
         method: 'PATCH',
         body: JSON.stringify({
-          updates: [{ lineId, quantityReturned }],
+          updates,
         }),
       });
+      let tickets: ProductReturnTicket[] | null = null;
+      try {
+        tickets = await fetchReturnTickets();
+      } catch (error) {
+        console.error('Erro ao atualizar ficha de retornos', error);
+      }
       setState((prev) => ({
         ...prev,
         shipments: prev.shipments.map((item) => (item.id === shipment.id ? shipment : item)),
+        returnTickets: tickets ?? prev.returnTickets,
       }));
     },
-    [authorizedRequest],
+    [authorizedRequest, fetchReturnTickets],
   );
 
   const removeShipment = useCallback(
@@ -215,12 +253,19 @@ export const LaundryProvider = ({ children }: { children: ReactNode }) => {
       await authorizedRequest<void>(`/api/shipments/${shipmentId}`, {
         method: 'DELETE',
       });
+      let tickets: ProductReturnTicket[] | null = null;
+      try {
+        tickets = await fetchReturnTickets();
+      } catch (error) {
+        console.error('Erro ao atualizar ficha de retornos', error);
+      }
       setState((prev) => ({
         ...prev,
         shipments: prev.shipments.filter((shipment) => shipment.id !== shipmentId),
+        returnTickets: tickets ?? prev.returnTickets,
       }));
     },
-    [authorizedRequest],
+    [authorizedRequest, fetchReturnTickets],
   );
 
   const finalizeShipment = useCallback(
@@ -237,6 +282,36 @@ export const LaundryProvider = ({ children }: { children: ReactNode }) => {
     [],
   );
 
+  const applyReturnByProduct = useCallback(
+    async (
+      updates: Array<{
+        productId: string;
+        quantity: number;
+        occurredAt?: string;
+        notes?: string;
+      }>,
+    ) => {
+      const response = await authorizedRequest<{
+        results: ProductReturnResult[];
+        tickets: ProductReturnTicket[];
+      }>('/api/shipments/returns/by-product', {
+        method: 'POST',
+        body: JSON.stringify({ updates }),
+      });
+
+      const shipments = await authorizedRequest<Shipment[]>('/api/shipments');
+
+      setState((prev) => ({
+        ...prev,
+        shipments,
+        returnTickets: response.tickets,
+      }));
+
+      return response;
+    },
+    [authorizedRequest],
+  );
+
   const value = useMemo<LaundryContextValue>(
     () => ({
       state,
@@ -250,6 +325,7 @@ export const LaundryProvider = ({ children }: { children: ReactNode }) => {
       updateShipmentReturn,
       removeShipment,
       finalizeShipment,
+      applyReturnByProduct,
     }),
     [
       state,
@@ -263,6 +339,7 @@ export const LaundryProvider = ({ children }: { children: ReactNode }) => {
       updateShipmentReturn,
       removeShipment,
       finalizeShipment,
+      applyReturnByProduct,
     ],
   );
 

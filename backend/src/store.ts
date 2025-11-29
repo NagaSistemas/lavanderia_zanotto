@@ -6,6 +6,11 @@ import type {
   ShipmentItem,
   ShipmentReturnUpdate,
   ShipmentReturnView,
+  ShipmentBalanceItem,
+  ProductReturnRequest,
+  ProductReturnResult,
+  ProductReturnTicket,
+  ProductReturnAllocation,
 } from './types.js';
 import type { DocumentSnapshot } from 'firebase-admin/firestore';
 import { FieldPath } from 'firebase-admin/firestore';
@@ -21,6 +26,19 @@ type ShipmentRecord = Shipment & {
 
 const removeUndefined = <T extends Record<string, unknown>>(data: T): T =>
   Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined)) as T;
+
+const latestTimestamp = (a?: string, b?: string): string => {
+  if (!a && !b) {
+    return new Date().toISOString();
+  }
+  if (!a) {
+    return b as string;
+  }
+  if (!b) {
+    return a;
+  }
+  return a.localeCompare(b) >= 0 ? a : b;
+};
 
 const mapProductDoc = (doc: DocumentSnapshot): Product => {
   const data = doc.data() as Product | undefined;
@@ -43,7 +61,10 @@ const mapShipmentDoc = (doc: DocumentSnapshot): Shipment => {
   return {
     ...data,
     id: doc.id,
-    items: data.items ?? [],
+    items: (data.items ?? []).map((item) => ({
+      ...item,
+      quantityReturned: item.quantityReturned ?? 0,
+    })),
   };
 };
 
@@ -90,6 +111,7 @@ const mapReturnView = (shipment: Shipment, products: Map<string, Product>): Ship
       productName: product?.name ?? 'Produto removido',
       quantitySent: item.quantitySent,
       quantityReturned: item.quantityReturned,
+      quantityPending: Math.max(item.quantitySent - item.quantityReturned, 0),
     };
   }),
   createdAt: shipment.createdAt,
@@ -234,6 +256,141 @@ export const getShipmentReturnView = async (
   return mapReturnView(shipment, products);
 };
 
+export const listShipmentBalances = async (ownerId: string): Promise<ShipmentBalanceItem[]> => {
+  const shipments = await listShipments(ownerId);
+  if (shipments.length === 0) {
+    return [];
+  }
+
+  const productIds = shipments.flatMap((shipment) => shipment.items.map((item) => item.productId));
+  const products = await fetchProductsByIds(productIds);
+  const balanceMap = new Map<string, ShipmentBalanceItem>();
+
+  shipments.forEach((shipment) => {
+    shipment.items.forEach((item) => {
+      const product = products.get(item.productId);
+      const current = balanceMap.get(item.productId) ?? {
+        productId: item.productId,
+        productName: product?.name ?? 'Produto removido',
+        category: product?.category,
+        totalSent: 0,
+        totalReturned: 0,
+        pendingReturn: 0,
+        lastSentAt: undefined,
+        lastReturnedAt: undefined,
+        movements: [],
+      };
+
+      current.productName = product?.name ?? current.productName;
+      current.category = product?.category ?? current.category;
+
+      current.totalSent += item.quantitySent;
+      current.totalReturned += item.quantityReturned;
+      current.pendingReturn = Math.max(current.totalSent - current.totalReturned, 0);
+
+      if (!current.lastSentAt || shipment.sentAt > current.lastSentAt) {
+        current.lastSentAt = shipment.sentAt;
+      }
+      current.movements.push({
+        shipmentId: shipment.id,
+        lineId: item.id,
+        productId: item.productId,
+        type: 'sent',
+        quantity: item.quantitySent,
+        occurredAt: shipment.sentAt,
+        notes: shipment.notes,
+      });
+
+      if (item.quantityReturned > 0) {
+        const returnAt = shipment.updatedAt ?? shipment.sentAt;
+        if (!current.lastReturnedAt || returnAt > current.lastReturnedAt) {
+          current.lastReturnedAt = returnAt;
+        }
+        current.movements.push({
+          shipmentId: shipment.id,
+          lineId: item.id,
+          productId: item.productId,
+          type: 'return',
+          quantity: item.quantityReturned,
+          occurredAt: returnAt,
+          notes: shipment.notes,
+        });
+      }
+
+      balanceMap.set(item.productId, current);
+    });
+  });
+
+  const balances = Array.from(balanceMap.values());
+  balances.forEach((balance) => {
+    balance.movements.sort((a, b) => a.occurredAt.localeCompare(b.occurredAt));
+  });
+  balances.sort((a, b) => balanceComparator(a, b));
+  return balances;
+};
+
+const balanceComparator = (a: ShipmentBalanceItem, b: ShipmentBalanceItem) => {
+  const byPending = b.pendingReturn - a.pendingReturn;
+  if (byPending !== 0) {
+    return byPending;
+  }
+  return a.productName.localeCompare(b.productName);
+};
+
+export const listProductReturnTickets = async (ownerId: string): Promise<ProductReturnTicket[]> => {
+  const shipments = await listShipments(ownerId);
+  if (shipments.length === 0) {
+    return [];
+  }
+
+  const productIds = shipments.flatMap((shipment) => shipment.items.map((item) => item.productId));
+  const products = await fetchProductsByIds(productIds);
+  const ticketMap = new Map<string, ProductReturnTicket>();
+
+  shipments.forEach((shipment) => {
+    shipment.items.forEach((item) => {
+      const product = products.get(item.productId);
+      const current = ticketMap.get(item.productId) ?? {
+        productId: item.productId,
+        productName: product?.name ?? 'Produto removido',
+        category: product?.category,
+        totalSent: 0,
+        totalReturned: 0,
+        pendingReturn: 0,
+        shipments: [],
+      };
+
+      current.productName = product?.name ?? current.productName;
+      current.category = product?.category ?? current.category;
+      current.totalSent += item.quantitySent;
+      current.totalReturned += item.quantityReturned;
+      current.pendingReturn = Math.max(current.totalSent - current.totalReturned, 0);
+      current.shipments.push({
+        shipmentId: shipment.id,
+        sentAt: shipment.sentAt,
+        expectedReturnAt: shipment.expectedReturnAt,
+        notes: shipment.notes,
+        quantitySent: item.quantitySent,
+        quantityReturned: item.quantityReturned,
+        quantityPending: Math.max(item.quantitySent - item.quantityReturned, 0),
+      });
+
+      ticketMap.set(item.productId, current);
+    });
+  });
+
+  const tickets = Array.from(ticketMap.values());
+  tickets.forEach((ticket) => ticket.shipments.sort((a, b) => a.sentAt.localeCompare(b.sentAt)));
+  tickets.sort((a, b) => {
+    const byPending = b.pendingReturn - a.pendingReturn;
+    if (byPending !== 0) {
+      return byPending;
+    }
+    return a.productName.localeCompare(b.productName);
+  });
+  return tickets;
+};
+
 export const createShipment = async (
   ownerId: string,
   input: ShipmentInput,
@@ -304,6 +461,7 @@ export const updateShipmentReturns = async (
   id: string,
   ownerId: string,
   updates: ShipmentReturnUpdate[],
+  mode: 'set' | 'increment' = 'set',
 ): Promise<Shipment | null> => {
   const docRef = shipmentsCollection.doc(id);
   const snapshot = await docRef.get();
@@ -323,10 +481,9 @@ export const updateShipmentReturns = async (
       return item;
     }
 
-    const quantityReturned = Math.min(
-      Math.max(updateMap.get(item.id) ?? 0, 0),
-      item.quantitySent,
-    );
+    const requested = Math.max(updateMap.get(item.id) ?? 0, 0);
+    const base = mode === 'increment' ? item.quantityReturned : 0;
+    const quantityReturned = Math.min(base + requested, item.quantitySent);
 
     return {
       ...item,
@@ -343,6 +500,153 @@ export const updateShipmentReturns = async (
 
   await docRef.set(removeUndefined(updated));
   return mapShipmentDoc(await docRef.get());
+};
+
+export const applyProductReturns = async (
+  ownerId: string,
+  updates: ProductReturnRequest[],
+): Promise<ProductReturnResult[]> => {
+  if (updates.length === 0) {
+    return [];
+  }
+
+  const shipments = await listShipments(ownerId);
+  if (shipments.length === 0) {
+    return updates.map((update) => ({
+      productId: update.productId,
+      requested: update.quantity,
+      applied: 0,
+      remaining: update.quantity,
+      allocations: [],
+      notes: update.notes,
+      warning: 'Nenhum envio encontrado para este produto',
+    }));
+  }
+
+  const products = await fetchProductsByIds(updates.map((item) => item.productId));
+  const shipmentsMap = new Map<string, Shipment>(
+    shipments.map((shipment) => [
+      shipment.id,
+      {
+        ...shipment,
+        items: shipment.items.map((item) => ({ ...item })),
+      },
+    ]),
+  );
+  const orderedShipments = Array.from(shipmentsMap.values()).sort((a, b) =>
+    a.sentAt.localeCompare(b.sentAt),
+  );
+
+  const touchedShipments = new Set<string>();
+  const updatedAtMap = new Map<string, string>();
+  const results: ProductReturnResult[] = [];
+
+  updates.forEach((update) => {
+    const productExists = products.has(update.productId);
+    if (!productExists) {
+      results.push({
+        productId: update.productId,
+        requested: update.quantity,
+        applied: 0,
+        remaining: update.quantity,
+        allocations: [],
+        notes: update.notes,
+        warning: 'Produto nao encontrado ou nao pertence ao usuario',
+      });
+      return;
+    }
+
+    let remaining = Math.max(update.quantity, 0);
+    const allocations: ProductReturnAllocation[] = [];
+    const effectiveUpdateAt = update.occurredAt
+      ? new Date(update.occurredAt).toISOString()
+      : new Date().toISOString();
+
+    orderedShipments.forEach((shipment) => {
+      if (remaining <= 0) {
+        return;
+      }
+
+      let shipmentChanged = false;
+      const items = shipment.items.map((item) => {
+        if (item.productId !== update.productId || remaining <= 0) {
+          return item;
+        }
+
+        const pending = Math.max(item.quantitySent - item.quantityReturned, 0);
+        if (pending === 0) {
+          return item;
+        }
+
+        const applied = Math.min(pending, remaining);
+        remaining -= applied;
+        shipmentChanged = true;
+
+        allocations.push({
+          shipmentId: shipment.id,
+          lineId: item.id,
+          applied,
+          pendingAfter: pending - applied,
+        });
+
+        return {
+          ...item,
+          quantityReturned: item.quantityReturned + applied,
+        };
+      });
+
+      if (shipmentChanged) {
+        shipment.items = items;
+        shipment.updatedAt = latestTimestamp(shipment.updatedAt, effectiveUpdateAt);
+        updatedAtMap.set(shipment.id, shipment.updatedAt);
+        touchedShipments.add(shipment.id);
+      }
+    });
+
+    const appliedTotal = update.quantity - remaining;
+    results.push({
+      productId: update.productId,
+      requested: update.quantity,
+      applied: appliedTotal,
+      remaining,
+      allocations,
+      notes: update.notes,
+      warning:
+        appliedTotal === 0
+          ? 'Nenhuma peca pendente para retorno'
+          : remaining > 0
+          ? 'Parte da quantidade solicitada nao foi aplicada por falta de saldo pendente'
+          : undefined,
+    });
+  });
+
+  if (touchedShipments.size > 0) {
+    const batch = firestore.batch();
+    touchedShipments.forEach((shipmentId) => {
+      const shipment = shipmentsMap.get(shipmentId);
+      if (!shipment) {
+        return;
+      }
+
+      const items = shipment.items.map((item) => ({
+        ...item,
+        quantityReturned: Math.min(item.quantityReturned, item.quantitySent),
+      }));
+
+      const updated: ShipmentRecord = {
+        ...shipment,
+        items,
+        itemProductIds: items.map((item) => item.productId),
+        updatedAt: updatedAtMap.get(shipmentId) ?? shipment.updatedAt ?? new Date().toISOString(),
+      };
+
+      batch.set(shipmentsCollection.doc(shipmentId), removeUndefined(updated));
+    });
+
+    await batch.commit();
+  }
+
+  return results;
 };
 
 export const deleteShipment = async (id: string, ownerId: string): Promise<boolean> => {

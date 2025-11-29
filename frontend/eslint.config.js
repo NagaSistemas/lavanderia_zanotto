@@ -6,7 +6,8 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  // Ignora arquivos gerados de build/bundle
+  globalIgnores(['dist', 'assets', 'workbox-5ffe50d4.js']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [

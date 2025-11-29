@@ -30,6 +30,7 @@ export type Shipment = {
 export type LaundryState = {
   products: Product[];
   shipments: Shipment[];
+  returnTickets: ProductReturnTicket[];
 };
 
 export type ProductPayload = {
@@ -49,4 +50,41 @@ export type ShipmentPayload = {
   expectedReturnAt?: string;
   notes?: string;
   items: ShipmentItemPayload[];
+};
+
+export type ProductReturnTicketShipment = {
+  shipmentId: string;
+  sentAt: string;
+  expectedReturnAt?: string;
+  notes?: string;
+  quantitySent: number;
+  quantityReturned: number;
+  quantityPending: number;
+};
+
+export type ProductReturnTicket = {
+  productId: string;
+  productName: string;
+  category?: string;
+  totalSent: number;
+  totalReturned: number;
+  pendingReturn: number;
+  shipments: ProductReturnTicketShipment[];
+};
+
+export type ProductReturnAllocation = {
+  shipmentId: string;
+  lineId: string;
+  applied: number;
+  pendingAfter: number;
+};
+
+export type ProductReturnResult = {
+  productId: string;
+  requested: number;
+  applied: number;
+  remaining: number;
+  allocations: ProductReturnAllocation[];
+  notes?: string;
+  warning?: string;
 };

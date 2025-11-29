@@ -3,11 +3,12 @@ import { DashboardSection } from './components/DashboardSection';
 import { ProductsSection } from './components/ProductsSection';
 import { ReportsSection } from './components/ReportsSection';
 import { ShipmentsSection } from './components/ShipmentsSection';
+import { ReturnsSection } from './components/ReturnsSection';
 import { LoginForm } from './components/LoginForm';
 import { useAuth } from './context/AuthContext';
 import { useLaundry } from './context/LaundryContext';
 
-type TabOption = 'dashboard' | 'products' | 'shipments' | 'reports';
+type TabOption = 'dashboard' | 'products' | 'shipments' | 'returns' | 'reports';
 
 const navigation: Array<{
   id: TabOption;
@@ -27,7 +28,12 @@ const navigation: Array<{
   {
     id: 'shipments',
     label: 'Envios',
-    description: 'Registre lotes enviados e retornos da lavanderia.',
+    description: 'Registre lotes enviados e acompanhe dados operacionais.',
+  },
+  {
+    id: 'returns',
+    label: 'Retornos',
+    description: 'Controle de devoluções por envio ou ficha única por peça.',
   },
   {
     id: 'reports',
@@ -89,6 +95,8 @@ const App = () => {
         return <ProductsSection />;
       case 'shipments':
         return <ShipmentsSection />;
+      case 'returns':
+        return <ReturnsSection />;
       case 'reports':
         return <ReportsSection />;
       default:
